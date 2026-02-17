@@ -12,7 +12,6 @@ manila_map <- leaflet() %>%
     lat = 14.5995,
     popup = "<b>Manila City</b><br>Capital of the Philippines"
   )
-
 manila_map
 
 library(htmlwidgets)

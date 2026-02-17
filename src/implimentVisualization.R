@@ -9,12 +9,18 @@ eda_data <- data.frame(
   ),
   Month = rep(month.abb[1:6], each = 20)
 )
-plot_ly(
+scatter_plot <- plot_ly(
   eda_data,
   x = ~StudyHours,
   y = ~ScienceScore,
   type = "scatter",
   mode = "markers"
+)
+box_plot <- plot_ly(
+  eda_data,
+  x = ~Month,
+  y = ~ScienceScore,
+  type = "box"
 )
 
 
