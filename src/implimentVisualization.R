@@ -1,14 +1,4 @@
-<<<<<<< HEAD
-box_plot <- function() {
-  plot_ly(
-    data = eda_data,
-    x = ~Month,
-    y = ~ScienceScore,
-    color = ~Month,
-    type = "box"
-  )
-}
-=======
+
 library("plotly")
 library("dplyr")
 library("ggplot2")
@@ -59,12 +49,11 @@ box_plot <- plot_ly(
 )
 
 box_plot <- function() {
-  p <- ggplot(eda_data,
-              aes(x = Month, y = ScienceScore, fill = Month)) +
-    geom_boxplot() +
-    labs(title = "Box and Whisker Plot")
-  
-  ggplotly(p)
+  plot_ly(
+    data = eda_data,
+    x = ~Month,
+    y = ~ScienceScore,
+    color = ~Month,
+    type = "box"
+  )
 }
-
->>>>>>> 56cc139e915a6fd176986c6633b2f0c5106bd09f
