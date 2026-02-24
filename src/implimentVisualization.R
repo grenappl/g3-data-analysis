@@ -41,12 +41,6 @@ bar_plot <- function(){
     type="bar"
   ) %>% layout(title = "Monthly Average of Science Scores")
 }
-box_plot <- plot_ly(
-  eda_data,
-  x = ~Month,
-  y = ~ScienceScore,
-  type = "box"
-)
 
 box_plot <- function() {
   plot_ly(
