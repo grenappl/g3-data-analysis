@@ -325,9 +325,7 @@ ui <- fluidPage(
       font-size: 14px !important;
     }
     
-    .selectize-dropdown .option:hover {
-      background: var(--gray-50) !important;
-    }
+
     
     .selectize-dropdown .active {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%) !important;
