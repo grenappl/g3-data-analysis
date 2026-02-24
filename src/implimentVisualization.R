@@ -1,3 +1,4 @@
+
 library("plotly")
 library("dplyr")
 library("ggplot2")
@@ -40,19 +41,13 @@ bar_plot <- function(){
     type="bar"
   ) %>% layout(title = "Monthly Average of Science Scores")
 }
-box_plot <- plot_ly(
-  eda_data,
-  x = ~Month,
-  y = ~ScienceScore,
-  type = "box"
-)
 
 box_plot <- function() {
-  p <- ggplot(eda_data,
-              aes(x = Month, y = ScienceScore, fill = Month)) +
-    geom_boxplot() +
-    labs(title = "Box and Whisker Plot")
-  
-  ggplotly(p)
+  plot_ly(
+    data = eda_data,
+    x = ~Month,
+    y = ~ScienceScore,
+    color = ~Month,
+    type = "box"
+  )
 }
-
