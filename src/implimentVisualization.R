@@ -47,4 +47,12 @@ box_plot <- plot_ly(
   type = "box"
 )
 
+box_plot <- function() {
+  p <- ggplot(eda_data,
+              aes(x = Month, y = ScienceScore, fill = Month)) +
+    geom_boxplot() +
+    labs(title = "Box and Whisker Plot")
+  
+  ggplotly(p)
+}
 
