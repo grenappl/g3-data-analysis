@@ -1,0 +1,6 @@
+{
+    "r.plot.useHttpgd": true,
+    "r.sessionWatcher": true,
+    "r.bracketedPaste": true,
+    "r.lsp.diagnostics": false
+}
