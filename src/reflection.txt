@@ -1,0 +1,26 @@
+Building an R Shiny dashboard to visualize student data alongside a 
+geographical map showing various locations in Cebu City was an interesting and 
+welcoming experience.
+
+One meaningful insight discovered based on the scatter plot is that 
+study hours show no strong correlation with attendance,
+while the box plot reveals that January has the highest and most variable 
+Science scores compared to other months, suggesting that academic performance 
+varies across months without a clear relationship to study behavior.
+
+One significant visualization challenge encountered was rendering 
+the Philippine map accurately using leaflet because projected shapefile for 
+Philippine administrative boundaries proved to be more difficult than expected 
+since mismatched coordinate reference systems caused
+several provinces to render out of place or overlap incorrectly.
+
+Despite the technical challenges we faced, the final dashboard has successfully 
+shown its interactivity and readability, allowing users to properly locate 
+important landmarks in Cebu City along with importance levels depending on
+each landmark when using the geographical map window or visualizing study hours and
+attendance from a student dataset, dynamically updating all 
+three graphs in real time.
+
+Overall, this project has proved to us how powerful R Shiny can be 
+as a tool for communicating data-driven insights, especially when working with 
+relevant and geographically grounded datasets.
