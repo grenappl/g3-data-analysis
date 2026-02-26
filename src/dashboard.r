@@ -5,6 +5,9 @@ library(leaflet)
 source("implimentVisualization.R")
 source("geographical_mapping.R")
 
+reflection_file <- readLines("reflection.txt")
+reflection <- paste(reflection_file, collapse="\n")
+
 # Can you add a prettier file on this pls thank you - Joe
 # erm...
 
@@ -405,6 +408,7 @@ ui <- fluidPage(
     
     .fade-enter {
       animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-bottom: 24px;
     }
     
     @keyframes slideIn {
@@ -661,6 +665,21 @@ ui <- fluidPage(
                      )
           ))
         )
+    ),
+  
+    div(class="stat-card",
+      div(class = "stat-content",
+          div(style = "
+                display: flex;
+                flex-direction: row; 
+                align-items: center;",
+              div(class = "stat-icon",
+                  HTML("<i class='far fa-lightbulb'></i>")
+              ),
+              h3(style="font-weight: bold; margin-bottom: 20px;", "Reflection"),
+          ),
+          p(style="text-align: justify; margin: 16px;", reflection)
+      )
     )
 )
 
