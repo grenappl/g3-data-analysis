@@ -5,4 +5,4 @@ E <- c(83, 80, 75, 75, 40)
 
 S_data <- data.frame(S, M, Sc, E)
 
-s_data
+S_data
