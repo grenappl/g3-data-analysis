@@ -16,7 +16,7 @@ print(scaled_data)
 
 # 3. DISTANCE MATRIX (EUCLIDEAN)
 
-dist_matrix <- dist(scaled_data)
+dist_matrix <- dist(scaled_data, method="euclidean")
 print("Distance Matrix:")
 print(as.matrix(dist_matrix))
 
@@ -38,21 +38,34 @@ print(which(as.matrix(dist_matrix) == max_dist, arr.ind=TRUE))
 
 
 # 5. K-MEANS CLUSTERING (2 CLUSTERS)
+library("factoextra")
+library("ggplot2")
+ # 6
+km_result <- kmeans(scaled_data,
+centers = 3, nstart = 25)
+km_result$centers
+# 7
+orig_result <- kmeans(data[-1], centers =3, nstart  =25)
+orig_result$centers
+
+# 8
+km_result <- kmeans(scaled_data,
+centers = 2, nstart = 25)
+km_result$cluster
+# 9
 
 set.seed(123)
-k2 <- kmeans(scaled_data, centers=2)
-
-print("Cluster Assignment (k=2):")
-print(data.frame(S, Cluster=k2$cluster))
-
-print("Scaled Centers (k=2):")
-print(k2$centers)
+fviz_cluster(km_result, data = scaled_data,
+geom = "point",
+ellipse.type = "convex",
+main = "K-means Clustering Results")
 
 
 # 6. CONVERT CENTERS BACK TO ORIGINAL VALUES
 
 original_centers_k2 <- k2$centers * attr(scaled_data, "scaled:scale") +
   attr(scaled_data, "scaled:center")
+
 
 print("Original Centers (k=2):")
 print(original_centers_k2)

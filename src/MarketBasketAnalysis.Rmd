@@ -1,0 +1,26 @@
+---
+title: "CG3CG3"
+author: 
+- de Pedro, Joenell Conrad
+- Florentino, Ian Miguel
+- Nacu, Drixyl Reece
+- Ruelan, Ivan Paul
+- Seno, Matthew Anakin
+date: "CG3CG3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(arules)
+library
+```
+
+
+```{r}
+data <- read_excel("./OnlineRetail.xlsx")
+```
+
