@@ -38,8 +38,30 @@ bar_plot <- function(){
     avg_scores,
     x = ~Month,
     y = ~ScienceScore,
+    color = ~Month,
     type="bar"
   ) %>% layout(title = "Monthly Average of Science Scores")
+}
+
+plot_histogram <- function(x_var, bins){
+  plot_ly(
+    eda_data,
+    x = ~.data[[x_var]],
+    type = "histogram",
+    nbinsx = bins,
+    marker = list(
+      color = "#422feb",
+      line = list(
+        color = "black",
+        width = 1
+      )
+    )
+  ) %>%
+  layout(
+    xaxis = list(title = x_var),
+    yaxis = list(title = "Count"),
+    height = 400
+  )
 }
 
 box_plot <- function() {

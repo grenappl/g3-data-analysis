@@ -5,6 +5,9 @@ library(leaflet)
 source("implimentVisualization.R")
 source("geographical_mapping.R")
 
+reflection_file <- readLines("reflection.txt")
+reflection <- paste(reflection_file, collapse="\n")
+
 # Can you add a prettier file on this pls thank you - Joe
 # erm...
 
@@ -405,6 +408,7 @@ ui <- fluidPage(
     
     .fade-enter {
       animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-bottom: 24px;
     }
     
     @keyframes slideIn {
@@ -517,7 +521,7 @@ ui <- fluidPage(
                   ),
                   div(class = "stat-content",
                       h4("Total Visualizations"),
-                      p(class = "stat-number", "4"),
+                      p(class = "stat-number", "5"),
                       span(class = "stat-label", "↑ 2 new this week")
                   )
               ),
@@ -566,6 +570,12 @@ ui <- fluidPage(
           fluidRow(
             actionButton("showBox", 
                          HTML("<i class='fas fa-chart-box'></i> Box Plot"),
+                         class = "action-button"
+            )
+          ),
+          fluidRow(
+            actionButton("showHist", 
+                         HTML("<i class='fas fa-chart-box'></i> Histogram"),
                          class = "action-button"
             )
           ),
@@ -646,6 +656,37 @@ ui <- fluidPage(
                          plotlyOutput("box")
                      )
           )),
+
+          hidden(div(id = "histogramPlot", class = "fade-enter",
+                    div(class = "selector-section",
+                      div(class = "selector-header",
+                          HTML("<i class='fas fa-sliders-h'></i>"),
+                          span("Variable Selection")
+                      ),
+                      layout_column_wrap(
+                        selectizeInput( 
+                          "hist", 
+                          "X-Axis Variable", 
+                          choices = list("Study Hours" = "StudyHours", "Attendance" = "Attendance", "Science Score" = "ScienceScore"),
+                          selected = "StudyHours"
+                        ),
+                        sliderInput("histBins", "Bins", 
+                          min = 10, max = 25, value = 10), 
+                      )
+                    ),
+                    div(class = "plot-container",
+                        div(class = "plot-header",
+                            div(class = "plot-title",
+                                HTML("<i class='fas fa-chart-histogram'></i>"),
+                                h4("Histogram")
+                            ),
+                            div(class = "plot-badge",
+                                HTML("<i class='fas fa-sync-alt'></i> Data distribution")
+                            )
+                        ),
+                        plotlyOutput("histogram",  height = "600px")
+              )
+          )),
           hidden(div(id = "geoPlot", class = "fade-enter",
                      div(class = "plot-container",
                          div(class = "plot-header",
@@ -657,16 +698,31 @@ ui <- fluidPage(
                                  HTML("<i class='fas fa-globe'></i> World Map")
                              )
                          ),
-                         leafletOutput("geo", height = "600px")
+                         leafletOutput("geo", height = "400px")
                      )
           ))
         )
+    ),
+  
+    div(class="stat-card",
+      div(class = "stat-content",
+          div(style = "
+                display: flex;
+                flex-direction: row; 
+                align-items: center;",
+              div(class = "stat-icon",
+                  HTML("<i class='far fa-lightbulb'></i>")
+              ),
+              h3(style="font-weight: bold; margin-bottom: 20px;", "Reflection"),
+          ),
+          p(style="text-align: justify; margin: 16px;", reflection)
+      )
     )
 )
 
 server <- function(input, output, session) {
   # When you add a plot please place it ehre
-  plots <- list("scatterPlot", "barPlot", "boxPlot", "geoPlot")
+  plots <- list("scatterPlot", "barPlot", "boxPlot", "geoPlot", "histogramPlot")
   
   # EVENT HANDLES TO HIDE PLOTS
   observeEvent(input$showScatter, {
@@ -677,6 +733,11 @@ server <- function(input, output, session) {
   observeEvent(input$showBar, {
     handleShowPlot("barPlot")
     updateButtonStates("showBar")
+  })
+
+  observeEvent(input$showHist, {
+    handleShowPlot("histogramPlot")
+    updateButtonStates("showHist")
   })
   
   observeEvent(input$showBox, {
@@ -710,7 +771,15 @@ server <- function(input, output, session) {
   output$bar <- renderPlotly({
     bar_plot()
   })
+
+
+  output$histogram <- renderPlotly({
+    req(input$hist)
+    plot_histogram(input$hist, input$histBins)
+  })
   
+  outputOptions(output, "histogram", suspendWhenHidden = TRUE)
+
   output$box <- renderPlotly({
     box_plot()
   })

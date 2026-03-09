@@ -1,0 +1,84 @@
+---
+title: "CG3CG3"
+author: 
+- de Pedro, Joenell Conrad
+- Florentino, Ian Miguel
+- Nacu, Drixyl Reece
+- Ruelan, Ivan Paul
+- Seno, Matthew Anakin
+date: "CG3CG3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(arules)
+library(arulesViz)
+```
+
+# 1. Load the dataset and convert it to a transaction object using arules
+```{r}
+setwd("C:/stuff/Code/R/New folder/g3-data-analysis/src") # sets ur path here
+data <- read.csv("./OnlineRetail.csv")
+head(data)
+```
+
+```{r}
+transactions <- as(split(data$Description, data$InvoiceNo), "transactions")
+
+summary(transactions)
+```
+# 2. Use the Apriori algorithm to find frequent itemsets with minimum support and confidence.
+```{r}
+rules <- apriori(
+  transactions,
+  parameter = list(
+    supp = 0.02,
+    conf = 0.5,
+    minlen = 2
+  )
+)
+```
+
+# 3. Inspect the top rules sorted by lift.
+
+```{r}
+print("Top Rules sorted by lift")
+options(width = 40)
+rules_sorted <- sort(rules, by="lift", decreasing=TRUE)
+inspect(rules_sorted[1:10])
+# inspect(head(rules_sorted, 10))
+```
+# 4. Visualize the rules using arulesViz.
+```{r}
+plot(rules, method="scatterplot",
+     measure=c("support","confidence"),
+     shading="confidence")
+```
+```{r}
+plot(rules, method="graph")
+```
+
+# 5. Discuss practical business implications (e.g., product bundling, promotions).
+- Common pairs can be found in the frequently sold products meaning we can sell SE- SETX :))
+- pag add mo
+
+# Discussion
+
+## Which items are frequently purchased together? (answer comes from question 3)
+- GREEN REGENCY TEACUP AND SAUCER and PINK REGENCY TEACUP AND SAUCER and ROSES REGENCY TEACUP AND SAUCER => 89% confidence
+- GARDENERS KNEELING PAD CUP OF TEA and GARDENERS KNEELING PAD KEEP CALM =? 71%
+- SPACEBOY LUNCH BOX and DOLLY GIRL LUNCH BOX  => 59% confidence
+
+
+## How could the store use this information to increase sales?
+- Could offer product bundling or buy multiple get percentage off offers
+- add lang mu
+## Are there rules that suggest cross-selling opportunities?
+- Yes, teacup and saucer color sets, lunch box sets
+
+## What is the effect of changing support or confidence on the number of rules?
+- kamo ani hehe
