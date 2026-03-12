@@ -9,7 +9,7 @@ print("Original Data:")
 print(data)
 
 
-# 1. STANDARDIZE (Z-SCORE NORMALIZATION)
+# 1. STANDARDIZE (Z-SCORE NORMALIZATIONS)
 scaled_data <- scale(data[-1])
 print("Scaled Data:")
 print(scaled_data)
@@ -38,6 +38,41 @@ print("Index of Largest Distance:")
 print(which(as.matrix(dist_matrix) == max_dist, arr.ind=TRUE))
 
 
+<<<<<<< HEAD
+=======
+# 5. K-MEANS CLUSTERING (2 CLUSTERS)
+library("factoextra")
+library("ggplot2")
+ # 6
+km_result <- kmeans(scaled_data,
+centers = 3, nstart = 25)
+km_result$centers
+# 7
+orig_result <- kmeans(data[-1], centers =3, nstart  =25)
+orig_result$centers
+
+# 8
+km_result <- kmeans(scaled_data,
+centers = 2, nstart = 25)
+km_result$cluster
+# 9
+
+set.seed(123)
+fviz_cluster(km_result, data = scaled_data,
+geom = "point",
+ellipse.type = "convex",
+main = "K-means Clustering Results")
+
+
+# 6. CONVERT CENTERS BACK TO ORIGINAL VALUES
+
+original_centers_k2 <- k2$centers * attr(scaled_data, "scaled:scale") +
+  attr(scaled_data, "scaled:center")
+
+
+print("Original Centers (k=2):")
+print(original_centers_k2)
+>>>>>>> 062c248931108786950dddbf4bc085628d7661df
 
 
 
