@@ -63,22 +63,39 @@ plot(rules, method="graph")
 ```
 
 # 5. Discuss practical business implications (e.g., product bundling, promotions).
-- Common pairs can be found in the frequently sold products meaning we can sell SE- SETX :))
-- pag add mo
+- The analysis shows that several products are frequently purchased together. This suggests that the store can create product bundles or sets that combine these related items (e.g., teacup and saucer sets or lunch box pairs).
+
+- The store can also use this information to design targeted promotions, such as “Buy Together and Save” or discounts when customers purchase multiple related items.
+
+- In addition, these products could be recommended to customers during checkout or displayed together on the website, encouraging customers to add complementary items to their purchase and increasing the overall sales value.
 
 # Discussion
 
 ## Which items are frequently purchased together? (answer comes from question 3)
-- GREEN REGENCY TEACUP AND SAUCER and PINK REGENCY TEACUP AND SAUCER and ROSES REGENCY TEACUP AND SAUCER => 89% confidence
-- GARDENERS KNEELING PAD CUP OF TEA and GARDENERS KNEELING PAD KEEP CALM =? 71%
-- SPACEBOY LUNCH BOX and DOLLY GIRL LUNCH BOX  => 59% confidence
+Based on the rules with the highest lift and confidence, several products are commonly bought together:
+
+- GREEN REGENCY TEACUP AND SAUCER, PINK REGENCY TEACUP AND SAUCER, and ROSES REGENCY TEACUP AND SAUCER are often purchased together. For example, when customers buy PINK REGENCY TEACUP AND SAUCER and ROSES REGENCY TEACUP AND SAUCER, there is about 89% confidence that they will also buy GREEN REGENCY TEACUP AND SAUCER.
+
+- GARDENERS KNEELING PAD CUP OF TEA and GARDENERS KNEELING PAD KEEP CALM are frequently purchased together, with about 71% confidence that customers who buy one will buy the other.
+
+- SPACEBOY LUNCH BOX and DOLLY GIRL LUNCH BOX are also commonly purchased together, with around 59% confidence.
+
+These associations suggest that customers tend to purchase related or matching products, such as items from the same product set or collection.
 
 
 ## How could the store use this information to increase sales?
-- Could offer product bundling or buy multiple get percentage off offers
-- add lang mu
+The store could use this information to design product bundling and promotional strategies. For example, items that are frequently bought together, such as the Regency teacup and saucer sets, could be offered as bundle deals or discounted sets.
+
+The store could also display these products close to each other on the website or in-store, making it easier for customers to add multiple related items to their purchase. Additionally, “Buy together and save” promotions could encourage customers to purchase multiple items from the same product collection.
+
 ## Are there rules that suggest cross-selling opportunities?
-- Yes, teacup and saucer color sets, lunch box sets
+Yes. The rules clearly show several cross-selling opportunities. For example, customers who buy one Regency teacup and saucer color variant are highly likely to purchase the other colors. This suggests that when a customer adds one teacup set to their cart, the system could recommend the other colors as complementary items. Similarly, the SPACEBOY LUNCH BOX and DOLLY GIRL LUNCH BOX are often purchased together, so the store could recommend one when the other is viewed or added to the cart. These recommendations could increase the average order value.
 
 ## What is the effect of changing support or confidence on the number of rules?
-- kamo ani hehe
+Changing the support or confidence thresholds affects how many rules are generated.
+
+- Increasing the support or confidence values will result in fewer rules, because only the strongest and most frequent item associations will meet the stricter requirements.
+
+- Decreasing the support or confidence values will produce more rules, since weaker or less frequent item relationships will also be included.
+
+However, lowering these thresholds too much may generate many insignificant or less useful rules, so it is important to choose values that balance rule quantity and meaningful insights.
