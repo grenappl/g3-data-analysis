@@ -21,7 +21,7 @@ library(arulesViz)
 
 # 1. Load the dataset and convert it to a transaction object using arules
 ```{r}
-setwd("C:/Users/Nacu/Desktop/DATA ANALYSIS 2026/gr3-data-analysis/src") # sets ur path here
+setwd("C:/stuff/Code/R/New folder/g3-data-analysis/src") # sets ur path here
 data <- read.csv("./OnlineRetail.csv")
 head(data)
 ```
