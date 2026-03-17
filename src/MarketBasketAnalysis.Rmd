@@ -27,7 +27,8 @@ head(data)
 ```
 
 ```{r}
-transactions <- as(split(data$InvoiceNo, data$StockCode), "transactions")
+transactions <- as(split(data$StockCode, data$InvoiceNo), "transactions")
+# inspect(transactions[1:5])
 summary(transactions)
 ```
 
@@ -41,6 +42,7 @@ rules <- apriori(
     minlen = 2
   )
 )
+inspect(rules[1:5])
 ```
 
 # 3. Inspect the top rules sorted by lift.
