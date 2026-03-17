@@ -21,16 +21,16 @@ library(arulesViz)
 
 # 1. Load the dataset and convert it to a transaction object using arules
 ```{r}
-setwd("C:/stuff/Code/R/New folder/g3-data-analysis/src") # sets ur path here
+#setwd("C:/stuff/Code/R/New folder/g3-data-analysis/src") # sets ur path here
 data <- read.csv("./OnlineRetail.csv")
 head(data)
 ```
 
 ```{r}
-transactions <- as(split(data$Description, data$InvoiceNo), "transactions")
-
+transactions <- as(split(data$InvoiceNo, data$StockCode), "transactions")
 summary(transactions)
 ```
+
 # 2. Use the Apriori algorithm to find frequent itemsets with minimum support and confidence.
 ```{r}
 rules <- apriori(
@@ -99,3 +99,5 @@ Changing the support or confidence thresholds affects how many rules are generat
 - Decreasing the support or confidence values will produce more rules, since weaker or less frequent item relationships will also be included.
 
 However, lowering these thresholds too much may generate many insignificant or less useful rules, so it is important to choose values that balance rule quantity and meaningful insights.
+
+
