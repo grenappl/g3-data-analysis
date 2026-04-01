@@ -1,15 +1,15 @@
 library(shiny)
 library(plotly)
 library(rpart)
-source("C:/stuff/Code/R/New folder/g3-data-analysis/src/Supervised Machine Learning/knn.r")
-
+# setwd here
+source("C:/Nyeh/Code/R/g3-data-analysis/src/Supervised Machine Learning/knn.r")
 ui <- fluidPage(
     titlePanel("Iris Classifier"),
     sidebarLayout(
         sidebarPanel(
             div(
                 sliderInput("kneighbors", "# of Neighbours:",
-                    min = 1, max = 50,
+                    min = 1, max = 100,
                     value = 3),
             ),
             div(
