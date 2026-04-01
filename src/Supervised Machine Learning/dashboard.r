@@ -1,74 +1,186 @@
-library(shiny)
-library(plotly)
-library(rpart)
-# setwd here
-source("C:/Nyeh/Code/R/g3-data-analysis/src/Supervised Machine Learning/knn.r")
-ui <- fluidPage(
-    titlePanel("Iris Classifier"),
-    sidebarLayout(
-        sidebarPanel(
-            div(
-                sliderInput("kneighbors", "# of Neighbours:",
-                    min = 1, max = 100,
-                    value = 3),
+    library(shiny)
+    library(plotly)
+    library(rpart)
+    # setwd here
+    source("C:/stuff/Code/R/New folder/g3-data-analysis/src/Supervised Machine Learning/knn.r")
+    ui <- fluidPage(
+        titlePanel("KNN"),
+        sidebarLayout(
+            sidebarPanel(
+                div(
+                    sliderInput("kneighbors", "# of Neighbours:",
+                        min = 1, max = 150,
+                        value = 3),
+                ),
+                div(
+                    selectInput("pclass", "Passenger Class", choices = c(1, 2, 3)),
+                    selectInput("sex", "Sex", choices = c("male", "female")),
+                    numericInput("age", "Age", value = 30, min = 1, max = 100),
+                    numericInput("fare", "Fare", value = 32, min = 0, max = 600),
+                    actionButton("predict_btn", "Predict", class = "btn-primary")
+                ),
             ),
-            div(
-                selectInput("pclass", "Passenger Class", choices = c(1, 2, 3)),
-                selectInput("sex", "Sex", choices = c("male", "female")),
-                numericInput("age", "Age", value = 30, min = 1, max = 100),
-                numericInput("fare", "Fare", value = 32, min = 0, max = 600),
-                actionButton("predict_btn", "Predict", class = "btn-primary")
-            ),
-        ),
-        mainPanel(
-            h3("Prediction:"),
-            verbatimTextOutput("prediction"),
-            htmlOutput("accuracy")
+            mainPanel(
+                h3("Prediction:"),
+                verbatimTextOutput("prediction"),
+                htmlOutput("metrics"),
+                plotlyOutput("decision_boundary"),
+                plotlyOutput("accuracy_k_plot")
+            )
         )
     )
-)
-server <- function(input, output) {
+    server <- function(input, output) {
 
-    knn_results <- reactive({
-        train_scaled <- predict(preproc, train[, numeric_cols])
-        test_scaled_full <- predict(preproc, test[, numeric_cols])
-        
-        pred_all <- knn(train = train_scaled,
-                        test  = test_scaled_full,
-                        cl    = train$Survived,
-                        k     = input$kneighbors)   
-        
-        confusionMatrix(pred_all, test$Survived)
-    })
-
-    # Use it in outputs — updates whenever slider moves
-    output$accuracy <- renderUI({
-        cM <- knn_results()   # call it like a function
-        tags$h3(paste("Accuracy:", round(cM$overall["Accuracy"], 3)))
-    })
-
-    observeEvent(input$predict_btn, {
-        
-
-        new_data <- data.frame(
-            Pclass = as.numeric(input$pclass),
-            Sex    = ifelse(input$sex == "male", 0, 1),
-            Age    = input$age,
-            Fare   = input$fare
-        )
-        
-        new_scaled <- predict(preproc, new_data)
-        
-        pred <- knn(train  = train_scaled,
-                    test   = new_scaled,
-                    cl     = train$Survived,
-                    k      = input$kneighbors)
-
-
-        output$prediction <- renderText({
-            if (pred == 1) "✅ Survived" else "❌ Did Not Survive"
+        knn_results <- reactive({
+            train_scaled <- predict(preproc, train[, numeric_cols])
+            test_scaled_full <- predict(preproc, test[, numeric_cols])
+            
+            pred_all <- knn(train = train_scaled,
+                            test  = test_scaled_full,
+                            cl    = train$Survived,
+                            k     = input$kneighbors)   
+            
+            confusionMatrix(pred_all, test$Survived)
         })
-    })
-}
 
-shinyApp(ui, server)
+        # Use it in outputs — updates whenever slider moves
+        output$metrics <- renderUI({
+            cm <- knn_results()   # call it like a function
+            accuracy    <- round(cm$overall["Accuracy"], 3)
+            sensitivity <- round(cm$byClass["Sensitivity"], 3)
+            specificity <- round(cm$byClass["Specificity"], 3)
+            f1          <- round(cm$byClass["F1"], 3)
+
+            TP <- cm$table[1, 1]
+            FP <- cm$table[1, 2]
+            FN <- cm$table[2, 1]
+            TN <- cm$table[2, 2]
+
+            # Build data frame
+            metrics_df <- data.frame(
+                Metric = c("Accuracy", "Sensitivity", "Specificity", "F1 Score", "TP", "TN", "FP", "FN"),
+                Value  = c(accuracy, sensitivity, specificity, f1, TP, TN, FP, FN)
+            )
+            tags$table(
+                style = "width: 100%; border-collapse: collapse; text-align: center;",
+                tags$thead(
+                tags$tr(
+                    tags$th(style = "border: 1px solid #ddd; padding: 8px; background-color: #4A90D9; color: white;", "Metric"),
+                    tags$th(style = "border: 1px solid #ddd; padding: 8px; background-color: #4A90D9; color: white;", "Value")
+                )
+                ),
+                tags$tbody(
+                lapply(1:nrow(metrics_df), function(i) {
+                    bg <- ifelse(i %% 2 == 0, "#f9f9f9", "white")
+                    tags$tr(
+                    tags$td(style = paste0("border: 1px solid #ddd; padding: 8px; background-color:", bg, ";"), metrics_df$Metric[i]),
+                    tags$td(style = paste0("border: 1px solid #ddd; padding: 8px; background-color:", bg, ";"), metrics_df$Value[i])
+                    )
+                })
+                )
+            )
+
+        })
+
+        output$decision_boundary <- renderPlotly({
+            cM <- knn_results()
+            
+            train_scaled <- predict(preproc, train[, numeric_cols])
+            test_scaled  <- predict(preproc, test[, numeric_cols])
+            
+            age_seq  <- seq(min(test_scaled$Age),  max(test_scaled$Age),  length.out = 150)
+            fare_seq <- seq(min(test_scaled$Fare), max(test_scaled$Fare), length.out = 150)
+            
+            grid_expand <- expand.grid(Age = age_seq, Fare = fare_seq)
+            grid_expand$Pclass <- median(test_scaled$Pclass)
+            grid_expand$Sex    <- median(test_scaled$Sex)
+            grid_expand <- grid_expand[, numeric_cols]
+            
+            grid_pred <- knn(train = train_scaled,
+                            test  = grid_expand,
+                            cl    = train$Survived,
+                            k     = input$kneighbors)
+            
+            z_matrix <- matrix(as.numeric(as.character(grid_pred)),
+                            nrow = length(fare_seq),
+                            ncol = length(age_seq))
+            
+            test_df <- data.frame(test_scaled, Survived = test$Survived)
+            
+            plot_ly() %>%
+                add_contour(x = age_seq, y = fare_seq, z = z_matrix,
+                            colorscale = list(c(0, "#F4CCCC"), c(1, "#C6D9F0")),
+                            contours = list(start = 0, end = 1, size = 0.5,
+                                            coloring = "fill", showlines = TRUE),
+                            line = list(color = "black", width = 1.5),
+                            showscale = FALSE, opacity = 0.6) %>%
+                add_markers(data = test_df[test_df$Survived == 0, ],
+                            x = ~Age, y = ~Fare,
+                            marker = list(color = "#CC0000", size = 6,
+                                        line = list(color = "white", width = 0.5)),
+                            name = "Did Not Survive") %>%
+                add_markers(data = test_df[test_df$Survived == 1, ],
+                            x = ~Age, y = ~Fare,
+                            marker = list(color = "#1A6FBF", size = 6,
+                                        line = list(color = "white", width = 0.5)),
+                            name = "Survived") %>%
+                layout(title = paste0("Decision Boundary (k = ", input$kneighbors, ")"),
+                    xaxis = list(title = "Age (scaled)"),
+                    yaxis = list(title = "Fare (scaled)"))
+        })
+
+        output$accuracy_k_plot <- renderPlotly({
+            train_scaled <- predict(preproc, train[, numeric_cols])
+            test_scaled  <- predict(preproc, test[, numeric_cols])
+            
+            k_values  <- seq(1, 200, by = 5)
+            accuracies <- sapply(k_values, function(k) {
+                pred <- knn(train = train_scaled,
+                            test  = test_scaled,
+                            cl    = train$Survived,
+                            k     = k)
+                mean(pred == test$Survived)
+            })
+            
+            acc_df <- data.frame(K = k_values, Accuracy = accuracies)
+            
+            plot_ly(acc_df, x = ~K, y = ~Accuracy, type = "scatter", mode = "lines+markers",
+                    line   = list(color = "#1A6FBF", width = 2),
+                    marker = list(color = "#1A6FBF", size = 5)) %>%
+                # Highlight current k
+                add_segments(x = input$kneighbors, xend = input$kneighbors,
+                            y = min(accuracies), yend = max(accuracies),
+                            line = list(color = "#CC0000", dash = "dash", width = 2),
+                            name = paste("Current k =", input$kneighbors)) %>%
+                layout(title = "Accuracy vs K",
+                    xaxis = list(title = "K (Neighbors)"),
+                    yaxis = list(title = "Accuracy", tickformat = ".0%"),
+                    showlegend = TRUE)
+        })
+        
+
+        observeEvent(input$predict_btn, {
+            
+
+            new_data <- data.frame(
+                Pclass = as.numeric(input$pclass),
+                Sex    = ifelse(input$sex == "male", 0, 1),
+                Age    = input$age,
+                Fare   = input$fare
+            )
+            
+            new_scaled <- predict(preproc, new_data)
+            
+            pred <- knn(train  = train_scaled,
+                        test   = new_scaled,
+                        cl     = train$Survived,
+                        k      = input$kneighbors)
+
+
+            output$prediction <- renderText({
+                if (pred == 1) "✅ Survived" else "❌ Did Not Survive"
+            })
+        })
+    }
+
+    shinyApp(ui, server)
