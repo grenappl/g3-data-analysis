@@ -5,10 +5,10 @@ library(DT)
 library(rpart)
 library(ggplot2)
 
-source('C:/stuff/Code/R/New folder/g3-data-analysis/src/titanic/data.r')
-source('C:/stuff/Code/R/New folder/g3-data-analysis/src/titanic/knn_model.r')
-source('C:/stuff/Code/R/New folder/g3-data-analysis/src/titanic/group_name.r')
-source('C:/stuff/Code/R/New folder/g3-data-analysis/src/titanic/data_visuals.r')
+source('data.r')
+source('knn_model.r')
+source('group_name.r')
+source('data_visuals.r')
 
 css <- "
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');

@@ -1,5 +1,4 @@
-1. Perform kNN
-
+1. Perform kNN [ILL ADD THE INTREP LATER, I WANNA WORK ON SOMETHING ELSE ;-;]
    a. Why does accuracy drop when k becomes too large?
    - When the K becomes too large, the model will underfit, meaning the model is too simple to capture local patterns in the data. When an unlabeled data is inserted, it will consider so many neighbors that the influence of nearby, relevant points is diluted by distant points, casuing the model to predict more general often incorrect, resulting in lower accuracy of the classification model.
 
