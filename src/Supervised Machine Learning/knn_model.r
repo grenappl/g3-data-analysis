@@ -16,11 +16,17 @@ train_index = createDataPartition(titanic$Survived, p =0.7, list=FALSE)
 train <- titanic[train_index, ]
 test <- titanic[-train_index, ]
 
-# Scale only numeric features (exclude Survived)
+# Scaling
 numeric_cols <- c("Pclass", "Sex", "Age", "Fare")
 preproc <- preProcess(train[, numeric_cols], method = c("center", "scale"))
 
 train_scaled <- predict(preproc, train[, numeric_cols])
+
+# PCA Model
+pca_model <- prcomp(train_scaled, center = FALSE, scale. = FALSE)
+train_pca <- as.data.frame(predict(pca_model, train_scaled))
+test_pca  <- as.data.frame(predict(pca_model, test_scaled))
+
 # test_scaled <- predict(preproc, test[, numeric_cols])
 
 # pred_all <- knn(train = train_scaled,

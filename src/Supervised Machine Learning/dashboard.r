@@ -24,12 +24,15 @@
                 h3("Prediction:"),
                 verbatimTextOutput("prediction"),
                 htmlOutput("metrics"),
-                plotlyOutput("decision_boundary"),
+                h4("PCA decision boundary – PC1 vs PC2"),
+                plotlyOutput("pca_boundary"),
                 plotlyOutput("accuracy_k_plot")
             )
         )
     )
     server <- function(input, output) {
+
+        predicted_point <- reactiveVal(NULL)
 
         knn_results <- reactive({
             train_scaled <- predict(preproc, train[, numeric_cols])
@@ -82,51 +85,63 @@
 
         })
 
-        output$decision_boundary <- renderPlotly({
-            cM <- knn_results()
-            
-            train_scaled <- predict(preproc, train[, numeric_cols])
-            test_scaled  <- predict(preproc, test[, numeric_cols])
-            
-            age_seq  <- seq(min(test_scaled$Age),  max(test_scaled$Age),  length.out = 150)
-            fare_seq <- seq(min(test_scaled$Fare), max(test_scaled$Fare), length.out = 150)
-            
-            grid_expand <- expand.grid(Age = age_seq, Fare = fare_seq)
-            grid_expand$Pclass <- median(test_scaled$Pclass)
-            grid_expand$Sex    <- median(test_scaled$Sex)
-            grid_expand <- grid_expand[, numeric_cols]
-            
-            grid_pred <- knn(train = train_scaled,
-                            test  = grid_expand,
+        output$pca_boundary <- renderPlotly({
+            pc1_seq <- seq(min(train_pca$PC1) - 0.5, max(train_pca$PC1) + 0.5, length.out = 150)
+            pc2_seq <- seq(min(train_pca$PC2) - 0.5, max(train_pca$PC2) + 0.5, length.out = 150)
+    
+            grid_pca  <- expand.grid(PC1 = pc1_seq, PC2 = pc2_seq)
+    
+            grid_pred <- knn(train = train_pca[, c("PC1", "PC2")],
+                            test  = grid_pca,
                             cl    = train$Survived,
                             k     = input$kneighbors)
-            
+    
             z_matrix <- matrix(as.numeric(as.character(grid_pred)),
-                            nrow = length(fare_seq),
-                            ncol = length(age_seq))
-            
-            test_df <- data.frame(test_scaled, Survived = test$Survived)
-            
-            plot_ly() %>%
-                add_contour(x = age_seq, y = fare_seq, z = z_matrix,
+                            nrow = length(pc2_seq),
+                            ncol = length(pc1_seq))
+    
+            test_pca_plot <- data.frame(test_pca, Survived = test$Survived)
+    
+            p <- plot_ly() %>%
+                add_contour(x = pc1_seq, y = pc2_seq, z = z_matrix,
                             colorscale = list(c(0, "#F4CCCC"), c(1, "#C6D9F0")),
-                            contours = list(start = 0, end = 1, size = 0.5,
+                            contours   = list(start = 0, end = 1, size = 0.5,
                                             coloring = "fill", showlines = TRUE),
-                            line = list(color = "black", width = 1.5),
-                            showscale = FALSE, opacity = 0.6) %>%
-                add_markers(data = test_df[test_df$Survived == 0, ],
-                            x = ~Age, y = ~Fare,
+                            line       = list(color = "black", width = 1.5),
+                            showscale  = FALSE, opacity = 0.6) %>%
+                add_markers(data   = test_pca_plot[test_pca_plot$Survived == 0, ],
+                            x = ~PC1, y = ~PC2,
                             marker = list(color = "#CC0000", size = 6,
                                         line = list(color = "white", width = 0.5)),
-                            name = "Did Not Survive") %>%
-                add_markers(data = test_df[test_df$Survived == 1, ],
-                            x = ~Age, y = ~Fare,
+                            name   = "Did Not Survive") %>%
+                add_markers(data   = test_pca_plot[test_pca_plot$Survived == 1, ],
+                            x = ~PC1, y = ~PC2,
                             marker = list(color = "#1A6FBF", size = 6,
                                         line = list(color = "white", width = 0.5)),
-                            name = "Survived") %>%
-                layout(title = paste0("Decision Boundary (k = ", input$kneighbors, ")"),
-                    xaxis = list(title = "Age (scaled)"),
-                    yaxis = list(title = "Fare (scaled)"))
+                            name   = "Survived")
+    
+            # ── Overlay predicted passenger as a star if button was clicked ────
+            pt <- predicted_point()
+            if (!is.null(pt)) {
+                dot_color <- if (pt$pred == 1) "#1A6FBF" else "#CC0000"
+                dot_label <- if (pt$pred == 1) "Your Passenger (Survived)" else "Your Passenger (Did Not Survive)"
+    
+                p <- p %>%
+                    add_markers(x = pt$PC1, y = pt$PC2,
+                                marker = list(
+                                    color  = dot_color,
+                                    size   = 16,
+                                    symbol = "star",
+                                    line   = list(color = "black", width = 1.5)
+                                ),
+                                name = dot_label)
+            }
+    
+            p %>% layout(
+                title  = paste0("PCA Decision Boundary (k = ", input$kneighbors, ")"),
+                xaxis  = list(title = "PC1"),
+                yaxis  = list(title = "PC2")
+            )
         })
 
         output$accuracy_k_plot <- renderPlotly({
@@ -160,25 +175,35 @@
         
 
         observeEvent(input$predict_btn, {
-            
-
             new_data <- data.frame(
                 Pclass = as.numeric(input$pclass),
                 Sex    = ifelse(input$sex == "male", 0, 1),
                 Age    = input$age,
                 Fare   = input$fare
             )
-            
+    
+            # 1. Scale using the same preproc as training
             new_scaled <- predict(preproc, new_data)
-            
-            pred <- knn(train  = train_scaled,
-                        test   = new_scaled,
-                        cl     = train$Survived,
-                        k      = input$kneighbors)
-
-
+    
+            # 2. Project into PCA space using the same pca_model
+            new_pca <- as.data.frame(predict(pca_model, new_scaled))
+    
+            # 3. Predict using full 4-feature KNN (not PCA-reduced)
+            pred <- knn(train = train_scaled,
+                        test  = new_scaled,
+                        cl    = train$Survived,
+                        k     = input$kneighbors)
+    
+            # 4. Save PCA coords + prediction into reactiveVal
+            #    This triggers pca_boundary to re-render with the star
+            predicted_point(list(
+                PC1  = new_pca$PC1,
+                PC2  = new_pca$PC2,
+                pred = as.numeric(as.character(pred))
+            ))
+    
             output$prediction <- renderText({
-                if (pred == 1) "✅ Survived" else "❌ Did Not Survive"
+                if (pred == 1) "Survived" else "Did Not Survive"
             })
         })
     }
