@@ -21,6 +21,7 @@ numeric_cols <- c("Pclass", "Sex", "Age", "Fare")
 preproc <- preProcess(train[, numeric_cols], method = c("center", "scale"))
 
 train_scaled <- predict(preproc, train[, numeric_cols])
+test_scaled <- predict(preproc, test[, numeric_cols])
 
 # PCA Model
 pca_model <- prcomp(train_scaled, center = FALSE, scale. = FALSE)
