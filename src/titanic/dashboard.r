@@ -304,7 +304,21 @@ ui <- dashboardPage(
       menuItem("Predictions", tabName = "predictions", icon = icon("brain")),
       menuItem("Dataset",     tabName = "dataset",     icon = icon("table")),
       menuItem("Team",        tabName = "team",        icon = icon("users"))
+    ),
+    conditionalPanel(
+        condition = "input.sidebar == 'predictions'",
+        
+        div(style = "padding: 15px;",
+            sliderInput("kneighbors", "# of Neighbours:",
+                        min = 1, max = 150, value = 3),
+            selectInput("pclass", "Passenger Class", choices = c(1, 2, 3)),
+            selectInput("sex", "Sex", choices = c("male", "female")),
+            numericInput("age", "Age", value = 30, min = 1, max = 100),
+            numericInput("fare", "Fare", value = 32, min = 0, max = 600),
+            actionButton("predict_btn", "Predict", class = "btn-primary")
+        )
     )
+
   ),
   
   dashboardBody(
@@ -377,35 +391,21 @@ ui <- dashboardPage(
       
       # PREDICTIONS
       tabItem(tabName = "predictions",
-              tags$h2("Predictions", class = "page-title"),
+              tags$h2("Knn Predictions", class = "page-title"),
               tags$hr(class = "divider"),
               
-              fluidPage(
-                titlePanel("KNN"),
-                sidebarLayout(
-                  sidebarPanel(
-                    div(
-                      sliderInput("kneighbors", "# of Neighbours:",
-                                  min = 1, max = 150,
-                                  value = 3),
-                    ),
-                    div(
-                      selectInput("pclass", "Passenger Class", choices = c(1, 2, 3)),
-                      selectInput("sex", "Sex", choices = c("male", "female")),
-                      numericInput("age", "Age", value = 30, min = 1, max = 100),
-                      numericInput("fare", "Fare", value = 32, min = 0, max = 600),
-                      actionButton("predict_btn", "Predict", class = "btn-primary")
-                    ),
-                  ),
-                  mainPanel(
-                    h3("Prediction:"),
-                    verbatimTextOutput("prediction"),
-                    htmlOutput("metrics"),
-                    h4("PCA decision boundary – PC1 vs PC2"),
-                    plotlyOutput("pca_boundary"),
-                    plotlyOutput("accuracy_k_plot"),
-                    plotlyOutput("differentK")
-                  )
+              fluidRow(
+                column(width=12,
+                  h3("Prediction:"),
+                  verbatimTextOutput("prediction"),
+                  htmlOutput("metrics"),
+                  h4("PCA decision boundary – PC1 vs PC2"),
+                  plotlyOutput("pca_boundary"),
+                  h4("K vs Accuracy plot"),
+                  plotlyOutput("accuracy_k_plot"),
+                  h4("K comparisons"),
+                  plotlyOutput("differentK")
+                
                 )
               )
       ),
@@ -480,7 +480,6 @@ server <- function(input, output, session) {
   predicted_point <- reactiveVal(NULL)
   
   knn_results <- reactive({
-    train_scaled <- predict(preproc, train[, numeric_cols])
     test_scaled_full <- predict(preproc, test[, numeric_cols])
     
     pred_all <- knn(train = train_scaled,
