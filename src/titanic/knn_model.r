@@ -2,7 +2,6 @@ library(titanic)
 library(class)
 library(caret)
 library(plotly)
-
 data(titanic_train)
 titanic <- titanic_train[,
     c("Survived", "Pclass", "Sex", "Age", "Fare")]
@@ -86,6 +85,88 @@ PCA_boundary <- function (kneighbors, predicted_point){
         title  = paste0("PCA Decision Boundary (k = ", kneighbors, ")"),
         xaxis  = list(title = "PC1"),
         yaxis  = list(title = "PC2")
+    )
+}
+
+different_knn <- function (){
+    pc1_seq  <- seq(min(train_pca$PC1) - 0.5, max(train_pca$PC1) + 0.5, length.out = 150)
+  pc2_seq  <- seq(min(train_pca$PC2) - 0.5, max(train_pca$PC2) + 0.5, length.out = 150)
+  grid_pca <- expand.grid(PC1 = pc1_seq, PC2 = pc2_seq)
+  
+  make_subplot <- function(k) {
+    
+    # Predict on grid
+    grid_pred <- knn(
+      train = train_pca[, c("PC1", "PC2")],
+      test  = grid_pca,
+      cl    = train$Survived,
+      k     = k
+    )
+    
+    z_matrix <- matrix(
+      as.numeric(as.character(grid_pred)),  # 0 or 1
+      nrow = length(pc1_seq),
+      ncol = length(pc2_seq)
+    )
+    
+    test_pca_plot <- data.frame(test_pca, Survived = test$Survived)
+    
+    plot_ly() %>%
+      add_contour(
+        x          = pc1_seq,
+        y          = pc2_seq,
+        z          = z_matrix,
+        colorscale = list(c(0, "#F4CCCC"), c(1, "#C6D9F0")),
+        contours   = list(
+          start    = 0, end = 1, size = 0.5,
+          coloring = "fill", showlines = TRUE
+        ),
+        line      = list(color = "black", width = 1.5),
+        showscale = FALSE,
+        opacity   = 0.6
+      ) %>%
+      add_markers(
+        data   = test_pca_plot[test_pca_plot$Survived == 0, ],
+        x      = ~PC1, y = ~PC2,
+        marker = list(color = "#CC0000", size = 6,
+                      line = list(color = "white", width = 0.5)),
+        name   = "Did Not Survive"
+      ) %>%
+      add_markers(
+        data   = test_pca_plot[test_pca_plot$Survived == 1, ],
+        x      = ~PC1, y = ~PC2,
+        marker = list(color = "#1A6FBF", size = 6,
+                      line = list(color = "white", width = 0.5)),
+        name   = "Survived"
+      ) %>%
+      layout(
+        title  = paste0("2-Class Classification (k = ", k, ")"),
+        xaxis  = list(title = "PC1"),
+        yaxis  = list(title = "PC2"),
+        legend = list(orientation = "v")
+      )
+  }
+  
+  plots <- lapply(c(1, 9, 18), make_subplot)
+  
+  subplot(
+    plots,
+    nrows       = 1,
+    shareX      = FALSE,
+    shareY      = FALSE,
+    titleX      = TRUE,
+    titleY      = TRUE,
+    margin      = 0.05
+  ) %>%
+    layout(
+      title = list(
+        text = paste(
+          "<b>Larger k = less complex = underfitting</b>",
+          "<b>Smaller k = more complex = overfitting</b>",
+          sep = "<br>"
+        ),
+        font = list(size = 13)
+      )
     )
 }
 

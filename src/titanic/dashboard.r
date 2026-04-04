@@ -403,7 +403,8 @@ ui <- dashboardPage(
                     htmlOutput("metrics"),
                     h4("PCA decision boundary – PC1 vs PC2"),
                     plotlyOutput("pca_boundary"),
-                    plotlyOutput("accuracy_k_plot")
+                    plotlyOutput("accuracy_k_plot"),
+                    plotlyOutput("differentK")
                   )
                 )
               )
@@ -500,6 +501,10 @@ server <- function(input, output, session) {
   
   output$accuracy_k_plot <- renderPlotly({
     K_accuracy_plot(input$kneighbors)
+  })
+
+  output$differentK <- renderPlotly({
+    different_knn()
   })
   
   observeEvent(input$predict_btn, {

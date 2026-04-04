@@ -8,6 +8,7 @@ titanic <- titanic::titanic_train
 # ensure correct types
 titanic$Survived <- as.numeric(titanic$Survived)
 titanic$Pclass   <- as.numeric(titanic$Pclass)
+titanic <- na.omit(titanic)
 
 
 ptly <- function(p) {
