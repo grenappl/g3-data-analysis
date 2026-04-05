@@ -58,12 +58,12 @@ ov_sex <- function (){
 }
 
 # precompute Age groups
-Age_No  <- titanic$Age[titanic$Survived == 0]
+Age  <- titanic$Age[titanic$Survived == 0]
 Age_Yes <- titanic$Age[titanic$Survived == 1]
 
 ov_age <- function(){
   plot_ly(alpha=0.6) |>
-    add_histogram(x = ~Age_No,  name="No",
+    add_histogram(x = ~Age,  name="No",
                   marker=list(color=COL_AMBER)) |>
     add_histogram(x = ~Age_Yes, name="Yes",
                   marker=list(color=COL_NAVY)) |>
@@ -85,7 +85,8 @@ an_fare <- function(){
   plot_ly(titanic,
           y=~Fare,
           x=~factor(Pclass, labels=c("1st","2nd","3rd")),
-          type="box",
+          type="violin", box = list(visible = TRUE),
+          meanline = list(visible = TRUE),
           split=~factor(Pclass),
           colors=c(COL_NAVY, COL_AMBER, COL_GOLD),
           box=list(visible=TRUE),
@@ -118,8 +119,8 @@ an_heatmap <- function(){
           texttemplate="%{text}",
           showscale=FALSE) |>
     ptly() |> layout(
-      xaxis=list(title=""),
-      yaxis=list(title="")
+      xaxis=list(title="Sex"),
+      yaxis=list(title="PClass")
     )
 }
 
@@ -154,7 +155,8 @@ an_box <- function(){
           y=~Fare,
           color=~factor(Survived, levels=c(0,1), labels=c("No","Yes")),
           colors=c(COL_AMBER, COL_NAVY),
-          type="box") |>
+          type="violin", box = list(visible = TRUE),
+          meanline = list(visible = TRUE)) |>
     ptly() |> layout(
       showlegend=FALSE,
       xaxis=list(title="Survived"),
@@ -212,22 +214,5 @@ an_family <- function(){
     ptly() |> layout(
       xaxis = list(title = "Family size (SibSp + Parch)"),
       yaxis = list(title = "Survival rate (%)", range = c(0, 100))
-    )
-}
-
-
-an_violin <- function(){
-  plot_ly(titanic,
-          x = ~factor(Survived, levels = c(0,1), labels = c("No","Yes")),
-          y = ~Fare,
-          color = ~factor(Survived, levels = c(0,1), labels = c("No","Yes")),
-          colors = c(COL_AMBER, COL_NAVY),
-          type = "violin",
-          box = list(visible = TRUE),
-          meanline = list(visible = TRUE)) |>
-    ptly() |> layout(
-      showlegend = FALSE,
-      xaxis = list(title = "Survived"),
-      yaxis = list(title = "Fare (£)")
     )
 }

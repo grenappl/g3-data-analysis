@@ -263,6 +263,12 @@ css <- "
     font-size:15px; color:#6B5F58; margin-top:18px; line-height:1.7;
   }
 
+  #prediction {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+
   /* ── 11. Custom Scrollbars ── */
   ::-webkit-scrollbar { width:8px; height:8px; }
   ::-webkit-scrollbar-track { background: #D9CEC3; }
@@ -296,21 +302,7 @@ ui <- dashboardPage(
       menuItem("Predictions", tabName = "predictions", icon = icon("brain")),
       menuItem("Dataset",     tabName = "dataset",     icon = icon("table")),
       menuItem("Team",        tabName = "team",        icon = icon("users"))
-    ),
-    conditionalPanel(
-        condition = "input.sidebar == 'predictions'",
-        
-        div(style = "padding: 15px;",
-            sliderInput("kneighbors", "# of Neighbours:",
-                        min = 1, max = 150, value = 3),
-            selectInput("pclass", "Passenger Class", choices = c(1, 2, 3)),
-            selectInput("sex", "Sex", choices = c("male", "female")),
-            numericInput("age", "Age", value = 30, min = 1, max = 100),
-            numericInput("fare", "Fare", value = 32, min = 0, max = 600),
-            actionButton("predict_btn", "Predict", class = "btn-primary")
-        )
     )
-
   ),
   
   dashboardBody(
@@ -367,32 +359,16 @@ ui <- dashboardPage(
                 )
               ),
               fluidRow(
-                box(title = "Fare Distribution by Survival", width = 12,
-                    plotlyOutput("an_box", height = "460px")
+                box(title = "Fare Distribution by Passenger Class", width = 12,
+                    plotlyOutput("an_fare", height = "460px")
                 )
               ),
               fluidRow(
-                box(title = "Fare Distribution by Passenger Class", width = 7,
-                    plotlyOutput("an_fare", height = "460px")
+                box(title = "Fare Distribution by Survival", width = 7,
+                    plotlyOutput("an_box", height = "460px")
                 ),
                 box(title = "Survival Rate by Class and Sex", width = 5,
                     plotlyOutput("an_heatmap", height = "460px")
-                )
-              ),
-              fluidRow(
-                box(title = "Age Distribution by Survival", width = 6,
-                    plotlyOutput("an_age_hist", height = "350px")
-                ),
-                box(title = "Survival by Embarkation Port", width = 6,
-                    plotlyOutput("an_embark", height = "350px")
-                )
-              ),
-              fluidRow(
-                box(title = "Fare Distribution by Survival — Violin", width = 6,
-                    plotlyOutput("an_violin", height = "400px")
-                ),
-                box(title = "Family Size vs Survival Rate", width = 6,
-                    plotlyOutput("an_family", height = "350px")
                 )
               )
       ),
@@ -401,19 +377,47 @@ ui <- dashboardPage(
       tabItem(tabName = "predictions",
               tags$h2("Knn Predictions", class = "page-title"),
               tags$hr(class = "divider"),
+
+              fluidRow(
+                column(width = 5,
+                  box(title = "Passenger Data Input", width = 12,
+                    div(style = "padding: 15px;",
+                      sliderInput("kneighbors", "# of Neighbours:",
+                                  min = 1, max = 150, value = 3),
+                      selectInput("pclass", "Passenger Class", choices = c(1, 2, 3)),
+                      selectInput("sex", "Sex", choices = c("male", "female")),
+                      numericInput("age", "Age", value = 30, min = 1, max = 100),
+                      numericInput("fare", "Fare", value = 32, min = 0, max = 600),
+                      actionButton("predict_btn", "Predict", class = "btn-primary"),
+                    )
+                  ),
+                  box(width = 12,
+                    textOutput("prediction")
+                  )
+                ),
+                column(width = 7,
+                  h3("Model Quality"),
+                  htmlOutput("model_qual"),
+                  br(),
+                  h3("Confusion Matrix Values"),
+                  htmlOutput("conf_mat")
+                )
+              ),
               
               fluidRow(
                 column(width=12,
-                  h3("Prediction:"),
-                  verbatimTextOutput("prediction"),
-                  htmlOutput("metrics"),
-                  h4("PCA decision boundary – PC1 vs PC2"),
-                  plotlyOutput("pca_boundary"),
-                  h4("K vs Accuracy plot"),
-                  plotlyOutput("accuracy_k_plot"),
-                  h4("K comparisons"),
-                  plotlyOutput("differentK")
-                
+                  br(),
+                  box(title = "PCA decision boundary – PC1 vs PC2", width = 12,
+                    plotlyOutput("pca_boundary")
+                  ),
+                  br(),
+                  box(title = "K vs Accuracy plot", width = 12,
+                    plotlyOutput("accuracy_k_plot")
+                  ),
+                  br(),
+                  box(title = "K comparisons", width = 12,
+                    plotlyOutput("differentK")
+                  )
                 )
               )
       ),
@@ -519,9 +523,12 @@ server <- function(input, output, session) {
   })
   
   # Use it in outputs — updates whenever slider moves
-  output$metrics <- renderUI({
-    metrics(knn_results())
-    
+  output$model_qual <- renderUI({
+    model_qual(knn_results())
+  })
+
+  output$conf_mat <- renderUI({
+    conf_mat(knn_results())
   })
   
   output$pca_boundary <- renderPlotly({PCA_boundary(input$kneighbors, predicted_point())})
@@ -533,6 +540,8 @@ server <- function(input, output, session) {
   output$differentK <- renderPlotly({
     different_knn()
   })
+
+  pred_result <- reactiveVal("Passenger Survival Result")
   
   observeEvent(input$predict_btn, {
     new_data <- data.frame(
@@ -556,11 +565,13 @@ server <- function(input, output, session) {
       PC2  = new_pca$PC2,
       pred = as.numeric(as.character(pred))
     ))
-    
-    output$prediction <- renderText({
-      if (pred == 1) "Survived" else "Did Not Survive"
-    })
+
+    pred_result(if (pred == 1) "✅ Survived" else "❌ Didn't Survive")
   })
+
+    output$prediction <- renderText({
+      paste0(pred_result())
+    })
   
   # Dataset
   output$main_table <- renderDT({

@@ -11,5 +11,5 @@ head(titanic)
 ```
 
 ```{r}
-shiny::runApp('C:/Users/USER/OneDrive/Documents/g3-data-analysis/src/titanic/dashboard.r')
+shiny::runApp('src/titanic/dashboard.r')
 ```

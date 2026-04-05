@@ -62,7 +62,7 @@ PCA_boundary <- function (kneighbors, predicted_point){
                     x = ~PC1, y = ~PC2,
                     marker = list(color = "#1A6FBF", size = 6,
                                 line = list(color = "white", width = 0.5)),
-                    name   = "Survived")
+                    name   = "Survived") %>% ptly()
 
     # ── Overlay predicted passenger as a star if button was clicked ────
     pt <- predicted_point
@@ -93,7 +93,7 @@ different_knn <- function (){
   pc2_seq  <- seq(min(train_pca$PC2) - 0.5, max(train_pca$PC2) + 0.5, length.out = 150)
   grid_pca <- expand.grid(PC1 = pc1_seq, PC2 = pc2_seq)
   
-  make_subplot <- function(k) {
+  make_subplot <- function(k, show_legend) {
     
     # Predict on grid
     grid_pred <- knn(
@@ -130,27 +130,32 @@ different_knn <- function (){
         x      = ~PC1, y = ~PC2,
         marker = list(color = "#CC0000", size = 6,
                       line = list(color = "white", width = 0.5)),
-        name   = "Did Not Survive"
+        name   = "Did Not Survive",
+        legendgroup = "no",
+        showlegend = show_legend
       ) %>%
       add_markers(
         data   = test_pca_plot[test_pca_plot$Survived == 1, ],
         x      = ~PC1, y = ~PC2,
         marker = list(color = "#1A6FBF", size = 6,
                       line = list(color = "white", width = 0.5)),
-        name   = "Survived"
+        name   = "Survived",
+        legendgroup = "yes",
+        showlegend = show_legend
       ) %>%
       layout(
         title  = paste0("2-Class Classification (k = ", k, ")"),
         xaxis  = list(title = "PC1"),
-        yaxis  = list(title = "PC2"),
-        legend = list(orientation = "v")
-      )
+        yaxis  = list(title = "PC2")
+      ) %>% ptly()
   }
   
-  plots <- lapply(c(1, 9, 18), make_subplot)
+  p1 <- make_subplot(k = 1,  show_legend = TRUE)
+  p2 <- make_subplot(k = 9,  show_legend = FALSE)
+  p3 <- make_subplot(k = 18, show_legend = FALSE)
   
   subplot(
-    plots,
+    list(p1, p2, p3),
     nrows       = 1,
     shareX      = FALSE,
     shareY      = FALSE,
@@ -165,44 +170,63 @@ different_knn <- function (){
           "<b>Smaller k = more complex = overfitting</b>",
           sep = "<br>"
         ),
-        font = list(size = 13)
+        font = list(size = 13),
+        y = 0.95
+      ),
+      margin = list(t = 80),
+      annotations = list(
+        list(x = 0.12, y = 1.05, text = "<b>k = 1</b>",  showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 13)),
+        list(x = 0.50, y = 1.05, text = "<b>k = 9</b>",  showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 13)),
+        list(x = 0.88, y = 1.05, text = "<b>k = 18</b>", showarrow = FALSE, xref = "paper", yref = "paper", font = list(size = 13))
       )
     )
 }
 
-metrics <- function(cm){
+model_qual <- function(cm){
     accuracy    <- round(cm$overall["Accuracy"], 3)
     sensitivity <- round(cm$byClass["Sensitivity"], 3)
     specificity <- round(cm$byClass["Specificity"], 3)
     f1          <- round(cm$byClass["F1"], 3)
 
+      # Build data frame
+    metrics_df <- data.frame(
+        Metric = c("Accuracy", "Sensitivity", "Specificity", "F1 Score"),
+        Value  = c(accuracy, sensitivity, specificity, f1)
+    )
+
+    div(
+      div(class = "kpi-row",
+        kpi(metrics_df$Value[1], metrics_df$Metric[1], "crosshairs", "kpi-dark"),
+        kpi(metrics_df$Value[2], metrics_df$Metric[2], "disease", "kpi-navy")
+      ),
+      div(class = "kpi-row",
+        kpi(metrics_df$Value[3], metrics_df$Metric[3], "hand-point-left", "kpi-orange"),
+        kpi(metrics_df$Value[4], metrics_df$Metric[4], "arrow-trend-up", "kpi-gold")
+      )
+    )
+}
+
+conf_mat <- function(cm){
     TP <- cm$table[1, 1]
     FP <- cm$table[1, 2]
     FN <- cm$table[2, 1]
     TN <- cm$table[2, 2]
 
-    # Build data frame
     metrics_df <- data.frame(
-        Metric = c("Accuracy", "Sensitivity", "Specificity", "F1 Score", "True Positive", "True Negative", "False Positive", "False Negative"),
-        Value  = c(accuracy, sensitivity, specificity, f1, TP, TN, FP, FN)
+        Metric = c("True Positive", "False Positive", "False Negative", "True Negative"),
+        Value  = c(TP, FP, FN, TN)
     )
 
-  div(
-    h4("Model Quality"),
-    div(class = "kpi-row",
-      kpi(metrics_df$Value[1], metrics_df$Metric[1], "crosshairs", "kpi-dark"),
-      kpi(metrics_df$Value[2], metrics_df$Metric[2], "disease", "kpi-navy"),
-      kpi(metrics_df$Value[3], metrics_df$Metric[3], "hand-point-left", "kpi-orange"),
-      kpi(metrics_df$Value[4], metrics_df$Metric[4], "arrow-trend-up", "kpi-gold")
-    ),
-    h4("Confusion Matrix Values"),
-    div(class = "kpi-row",
-      kpi(metrics_df$Value[5], metrics_df$Metric[5], "circle-plus", "kpi-gold"),
-      kpi(metrics_df$Value[6], metrics_df$Metric[6], "circle-minus", "kpi-orange"),
-      kpi(metrics_df$Value[7], metrics_df$Metric[7], "square-plus", "kpi-navy"),
-      kpi(metrics_df$Value[8], metrics_df$Metric[8], "square-minus", "kpi-dark")
+    div(
+      div(class = "kpi-row",
+        kpi(metrics_df$Value[1], metrics_df$Metric[1], "circle-plus", "kpi-dark"),
+        kpi(metrics_df$Value[2], metrics_df$Metric[2], "square-plus", "kpi-navy")
+      ),
+      div(class = "kpi-row",
+        kpi(metrics_df$Value[3], metrics_df$Metric[3], "square-minus", "kpi-orange"),
+        kpi(metrics_df$Value[4], metrics_df$Metric[4], "circle-minus", "kpi-gold")
+      )
     )
-  )
 }
 
 K_accuracy_plot <- function (kneighbors){
@@ -231,5 +255,5 @@ K_accuracy_plot <- function (kneighbors){
         layout(title = "Accuracy vs K",
             xaxis = list(title = "K (Neighbors)"),
             yaxis = list(title = "Accuracy", tickformat = ".0%"),
-            showlegend = TRUE)
+            showlegend = TRUE) %>% ptly()
 }
