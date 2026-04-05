@@ -183,27 +183,26 @@ metrics <- function(cm){
 
     # Build data frame
     metrics_df <- data.frame(
-        Metric = c("Accuracy", "Sensitivity", "Specificity", "F1 Score", "TP", "TN", "FP", "FN"),
+        Metric = c("Accuracy", "Sensitivity", "Specificity", "F1 Score", "True Positive", "True Negative", "False Positive", "False Negative"),
         Value  = c(accuracy, sensitivity, specificity, f1, TP, TN, FP, FN)
     )
-    tags$table(
-        style = "width: 100%; border-collapse: collapse; text-align: center;",
-        tags$thead(
-        tags$tr(
-            tags$th(style = "border: 1px solid #ddd; padding: 8px; background-color: #4A90D9; color: white;", "Metric"),
-            tags$th(style = "border: 1px solid #ddd; padding: 8px; background-color: #4A90D9; color: white;", "Value")
-        )
-        ),
-        tags$tbody(
-        lapply(1:nrow(metrics_df), function(i) {
-            bg <- ifelse(i %% 2 == 0, "#f9f9f9", "white")
-            tags$tr(
-            tags$td(style = paste0("border: 1px solid #ddd; padding: 8px; background-color:", bg, ";"), metrics_df$Metric[i]),
-            tags$td(style = paste0("border: 1px solid #ddd; padding: 8px; background-color:", bg, ";"), metrics_df$Value[i])
-            )
-        })
-        )
+
+  div(
+    h4("Model Quality"),
+    div(class = "kpi-row",
+      kpi(metrics_df$Value[1], metrics_df$Metric[1], "crosshairs", "kpi-dark"),
+      kpi(metrics_df$Value[2], metrics_df$Metric[2], "disease", "kpi-navy"),
+      kpi(metrics_df$Value[3], metrics_df$Metric[3], "hand-point-left", "kpi-orange"),
+      kpi(metrics_df$Value[4], metrics_df$Metric[4], "arrow-trend-up", "kpi-gold")
+    ),
+    h4("Confusion Matrix Values"),
+    div(class = "kpi-row",
+      kpi(metrics_df$Value[5], metrics_df$Metric[5], "circle-plus", "kpi-gold"),
+      kpi(metrics_df$Value[6], metrics_df$Metric[6], "circle-minus", "kpi-orange"),
+      kpi(metrics_df$Value[7], metrics_df$Metric[7], "square-plus", "kpi-navy"),
+      kpi(metrics_df$Value[8], metrics_df$Metric[8], "square-minus", "kpi-dark")
     )
+  )
 }
 
 K_accuracy_plot <- function (kneighbors){

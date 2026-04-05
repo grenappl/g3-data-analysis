@@ -163,6 +163,7 @@ css <- "
   .kpi-tile:nth-child(1) { animation-delay: 0.1s; }
   .kpi-tile:nth-child(2) { animation-delay: 0.2s; }
   .kpi-tile:nth-child(3) { animation-delay: 0.3s; }
+  .kpi-tile:nth-child(4) { animation-delay: 0.4s; }
   
   .kpi-val  { font-family:'DM Mono',monospace; font-size:38px; font-weight:500; z-index: 2; position: relative;}
   .kpi-lbl  { font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; opacity:0.9; margin-top:4px; z-index: 2; position: relative;}
@@ -171,6 +172,7 @@ css <- "
   
   .kpi-dark  { background: linear-gradient(135deg, #3E3630 0%, #1A1714 100%); }
   .kpi-navy  { background: linear-gradient(135deg, #4A6887 0%, #233446 100%); }
+  .kpi-orange  { background: linear-gradient(135deg, #AC6C35 0%, #976132 100%); }
   .kpi-gold  { background: linear-gradient(135deg, #C5A059 0%, #967410 100%); }
 
   /* ── 8. Beautiful Table Columns for Dataset ── */
@@ -268,16 +270,6 @@ css <- "
   ::-webkit-scrollbar-thumb:hover { background: #8C5628; }
 "
 
-kpi <- function(value, label, icon_name, css_class) {
-  div(class = paste("kpi-tile", css_class),
-      div(style = "padding-top: 10px;",
-          div(class = "kpi-icon", icon(icon_name)),
-          div(class = "kpi-val",  value),
-          div(class = "kpi-lbl",  label)
-      )
-  )
-}
-
 member <- function(initials, m) {
   div(class = "team-card",
       div(class = "team-avatar", style = paste0("background:", m$color, ";"), initials),
@@ -370,21 +362,21 @@ ui <- dashboardPage(
               tags$hr(class = "divider"),
               
               fluidRow(
-                box(title = "Fare Distribution by Passenger Class", width = 7,
-                    plotlyOutput("an_fare", height = "280px")
-                ),
-                box(title = "Survival Rate by Class and Sex", width = 5,
-                    plotlyOutput("an_heatmap", height = "280px")
-                )
-              ),
-              fluidRow(
-                box(title = "Age vs Fare - Coloured by Survival", width = 8,
-                    plotlyOutput("an_scatter", height = "270px")
+                box(title = "Age vs Fare - Colored by Survival", width = 12,
+                    plotlyOutput("an_scatter", height = "460px")
                 )
               ),
               fluidRow(
                 box(title = "Fare Distribution by Survival", width = 12,
-                    plotlyOutput("an_box", height = "300px")
+                    plotlyOutput("an_box", height = "460px")
+                )
+              ),
+              fluidRow(
+                box(title = "Fare Distribution by Passenger Class", width = 7,
+                    plotlyOutput("an_fare", height = "460px")
+                ),
+                box(title = "Survival Rate by Class and Sex", width = 5,
+                    plotlyOutput("an_heatmap", height = "460px")
                 )
               )
       ),
@@ -536,7 +528,7 @@ server <- function(input, output, session) {
   
   # Dataset
   output$main_table <- renderDT({
-    df <- titanic
+    df <- titanic[, c("Survived", "Pclass", "Sex", "Age", "Fare")]
     df$Survived = factor(df$Survived, labels = c("No", "Yes"))
     df$Survived <- ifelse(as.character(df$Survived) == "Yes",
                           '<span style="background:rgba(52,76,101,0.15);color:#344C65;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">Yes</span>',
@@ -545,7 +537,7 @@ server <- function(input, output, session) {
     df$Sex = factor(df$Sex, labels = c("Male", "Female"))
     df$Fare  <- paste0("£", round(df$Fare, 2))
     df$Pclass <- paste0(df$Pclass, c("st","nd","rd")[pmin(df$Pclass, 3)])
-    datatable(df, escape=FALSE, rownames=FALSE,
+    datatable(df, escape=FALSE, rownames=FALSE, filter="none",
               colnames=c("Survived","PClass","Sex","Age","Fare"),
               options=list(pageLength=15, dom="frtip", scrollX=TRUE),
               class="compact"

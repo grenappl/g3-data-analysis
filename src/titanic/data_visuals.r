@@ -22,6 +22,17 @@ COL_NAVY  <- "#344C65"
 COL_AMBER <- "#AC6C35"
 COL_GOLD  <- "#b89018"
 COL_CREAM <- "#DBCEBF"
+"#976132"
+
+kpi <- function(value, label, icon_name, css_class) {
+  div(class = paste("kpi-tile", css_class),
+      div(style = "padding-top: 10px;",
+          div(class = "kpi-icon", icon(icon_name)),
+          div(class = "kpi-val",  value),
+          div(class = "kpi-lbl",  label)
+      )
+  )
+}
 
 ov_class <- function(){
   df <- as.data.frame(table(Pclass = titanic$Pclass, Survived = titanic$Survived))
@@ -112,6 +123,10 @@ an_heatmap <- function(){
 }
 
 an_scatter <- function(){
+  trend <- lm(Fare ~ Age, data = titanic)
+  trend_df <- data.frame(Age = sort(titanic$Age))
+  trend_df$Fare <- predict(trend, trend_df)
+
   plot_ly(titanic,
           x=~Age, y=~Fare,
           color=~factor(Survived, levels=c(0,1), labels=c("No","Yes")),
@@ -123,6 +138,9 @@ an_scatter <- function(){
             line=list(width=0.5, color="rgba(255,255,255,0.4)")
           ),
           text=~paste("Class:", Pclass, "<br>Sex:", Sex)) |>
+    add_lines(data=trend_df, x=~Age, y=~Fare,
+      line=list(color=COL_GOLD, width=2),
+      name="Trend", inherit=FALSE, showlegend=TRUE) |>
     ptly() |> layout(
       xaxis=list(title="Age"),
       yaxis=list(title="Fare (£)")
@@ -142,3 +160,5 @@ an_box <- function(){
       yaxis=list(title="Fare (£)")
     )
 }
+
+# PREDICT METRICS
