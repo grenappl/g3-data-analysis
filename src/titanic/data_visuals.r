@@ -2,6 +2,7 @@ library(titanic)
 library(class)
 library(caret)
 library(plotly)
+library(dplyr)
 
 titanic <- titanic::titanic_train
 
@@ -161,4 +162,72 @@ an_box <- function(){
     )
 }
 
-# PREDICT METRICS
+# anakin parts
+
+an_age_hist <- function(){
+  plot_ly(alpha = 0.75) |>
+    add_histogram(x = ~Age_No,  name = "No",
+                  xbins = list(start = 0, end = 80, size = 5),
+                  marker = list(color = COL_AMBER)) |>
+    add_histogram(x = ~Age_Yes, name = "Yes",
+                  xbins = list(start = 0, end = 80, size = 5),
+                  marker = list(color = COL_NAVY)) |>
+    layout(barmode = "stack",
+           xaxis = list(title = "Age"),
+           yaxis = list(title = "Count")) |>
+    ptly()
+}
+
+an_embark <- function(){
+  df <- titanic |>
+    filter(Embarked != "") |>
+    mutate(Embarked = recode(Embarked,
+                             C = "Cherbourg", Q = "Queenstown", S = "Southampton")) |>
+    count(Embarked, Survived) |>
+    mutate(Survived = factor(Survived, levels = c(0,1), labels = c("No","Yes")))
+  
+  plot_ly(df, x = ~Embarked, y = ~n, color = ~Survived,
+          colors = c(COL_AMBER, COL_NAVY),
+          type = "bar", barmode = "stack",
+          marker = list(line = list(width = 0))) |>
+    ptly() |> layout(
+      xaxis = list(title = ""),
+      yaxis = list(title = "Passengers")
+    )
+}
+
+an_family <- function(){
+  df <- titanic |>
+    dplyr::mutate(FamilySize = SibSp + Parch) |>
+    dplyr::group_by(FamilySize) |>
+    dplyr::summarise(SurvivalRate = mean(Survived) * 100, n = n(), .groups = "drop") |>
+    dplyr::filter(n >= 10)
+  
+  plot_ly(df, x = ~factor(FamilySize), y = ~SurvivalRate,
+          type = "bar",
+          marker = list(
+            color = ifelse(df$SurvivalRate >= 50, COL_NAVY, COL_AMBER),
+            line  = list(width = 0)
+          )) |>
+    ptly() |> layout(
+      xaxis = list(title = "Family size (SibSp + Parch)"),
+      yaxis = list(title = "Survival rate (%)", range = c(0, 100))
+    )
+}
+
+
+an_violin <- function(){
+  plot_ly(titanic,
+          x = ~factor(Survived, levels = c(0,1), labels = c("No","Yes")),
+          y = ~Fare,
+          color = ~factor(Survived, levels = c(0,1), labels = c("No","Yes")),
+          colors = c(COL_AMBER, COL_NAVY),
+          type = "violin",
+          box = list(visible = TRUE),
+          meanline = list(visible = TRUE)) |>
+    ptly() |> layout(
+      showlegend = FALSE,
+      xaxis = list(title = "Survived"),
+      yaxis = list(title = "Fare (£)")
+    )
+}

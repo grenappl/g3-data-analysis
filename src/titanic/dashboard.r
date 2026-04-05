@@ -378,6 +378,22 @@ ui <- dashboardPage(
                 box(title = "Survival Rate by Class and Sex", width = 5,
                     plotlyOutput("an_heatmap", height = "460px")
                 )
+              ),
+              fluidRow(
+                box(title = "Age Distribution by Survival", width = 6,
+                    plotlyOutput("an_age_hist", height = "350px")
+                ),
+                box(title = "Survival by Embarkation Port", width = 6,
+                    plotlyOutput("an_embark", height = "350px")
+                )
+              ),
+              fluidRow(
+                box(title = "Fare Distribution by Survival — Violin", width = 6,
+                    plotlyOutput("an_violin", height = "400px")
+                ),
+                box(title = "Family Size vs Survival Rate", width = 6,
+                    plotlyOutput("an_family", height = "350px")
+                )
               )
       ),
       
@@ -434,6 +450,8 @@ ui <- dashboardPage(
 # Server
 server <- function(input, output, session) {
   
+  
+  
   # Overview
   output$ov_class <- renderPlotly({
     ov_class()
@@ -467,6 +485,24 @@ server <- function(input, output, session) {
   output$an_box <- renderPlotly({
     an_box()
   })
+  
+  ## ANAKIN STUFF
+  
+  output$an_age_hist <- renderPlotly({
+    an_age_hist() 
+  })
+  output$an_embark   <- renderPlotly({ 
+    an_embark() 
+  })
+  
+  output$an_family   <- renderPlotly({
+    an_family() 
+  })
+
+  output$an_violin   <- renderPlotly({ 
+    an_violin()
+  })
+  ##
   
   ## JOE STUFF
   predicted_point <- reactiveVal(NULL)
