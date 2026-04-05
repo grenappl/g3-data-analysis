@@ -229,11 +229,7 @@ conf_mat <- function(cm){
     )
 }
 
-K_accuracy_plot <- function (kneighbors){
-    train_scaled <- predict(preproc, train[, numeric_cols])
-    test_scaled  <- predict(preproc, test[, numeric_cols])
-    
-    k_values  <- seq(1, 200, by = 5)
+k_values  <- seq(1, 200, by = 5)
     accuracies <- sapply(k_values, function(k) {
         pred <- knn(train = train_scaled,
                     test  = test_scaled,
@@ -241,6 +237,12 @@ K_accuracy_plot <- function (kneighbors){
                     k     = k)
         mean(pred == test$Survived)
     })
+
+K_accuracy_plot <- function (kneighbors){
+    train_scaled <- predict(preproc, train[, numeric_cols])
+    test_scaled  <- predict(preproc, test[, numeric_cols])
+    
+    
     
     acc_df <- data.frame(K = k_values, Accuracy = accuracies)
     
