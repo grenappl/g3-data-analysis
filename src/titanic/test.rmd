@@ -1,0 +1,15 @@
+```{r}
+library(titanic)
+data(titanic_train)
+titanic <- titanic_train[,
+    c("Survived", "Pclass", "Sex", "Age", "Fare")]
+titanic <- na.omit(titanic)
+
+titanic$Survived <- factor(titanic$Survived)
+titanic$Sex <- ifelse(titanic$Sex == "male", 0, 1)
+head(titanic)
+```
+
+```{r}
+shiny::runApp('src/titanic/dashboard.r')
+```
