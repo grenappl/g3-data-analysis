@@ -259,3 +259,26 @@ K_accuracy_plot <- function (kneighbors){
             yaxis = list(title = "Accuracy", tickformat = ".0%"),
             showlegend = TRUE) %>% ptly()
 }
+# plot(train$Age, train$Fare,
+#      col = ifelse(train$Survived == 1, "steelblue", "tomato"),
+#      pch = 16,
+#      xlab = "Age",
+#      ylab = "Fare",
+#      main = "Titanic: Age vs Fare by Survival")
+
+# legend("topright",
+#        legend = c("Survived", "Did Not Survive"),
+#        col = c("steelblue", "tomato"),
+#        pch = 16)
+
+# ggplot(train, aes(x = Age, y = Fare, color = Survived, shape = factor(Sex))) +
+#   geom_point(alpha = 0.6, size = 2) +
+#   scale_color_manual(values = c("0" = "tomato", "1" = "steelblue"),
+#                      labels = c("Did Not Survive", "Survived")) +
+#   scale_shape_manual(values = c(16, 17),
+#                      labels = c("Male", "Female")) +
+#   facet_wrap(~ Pclass, labeller = label_both) +
+#   labs(title = "Age vs Fare by Survival, Sex, and Pclass",
+#        x = "Age", y = "Fare",
+#        color = "Outcome", shape = "Sex") +
+#   theme_minimal()
