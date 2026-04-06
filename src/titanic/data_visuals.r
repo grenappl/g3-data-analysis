@@ -49,7 +49,7 @@ ov_class <- function(){
 ov_sex <- function (){
   df <- as.data.frame(table(Sex = titanic$Sex, Survived = titanic$Survived))
   df$Survived <- factor(df$Survived, levels = c(0,1), labels = c("No", "Yes"))
-  df$Sex <- factor(df$Sex, labels=c("Male","Female"))
+  df$Sex <- factor(df$Sex, levels = c("male", "female"), labels=c("Male","Female"))
   
   plot_ly(df, x=~Sex, y=~Freq, color=~Survived,
           colors = c(COL_AMBER, COL_NAVY),

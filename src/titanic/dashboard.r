@@ -359,6 +359,11 @@ ui <- dashboardPage(
                 )
               ),
               fluidRow(
+                box(title = "Age Distribution by Passenger Class", width = 12,
+                  plotlyOutput("an_age_class", height = "460px")
+                )
+              ),
+              fluidRow(
                 box(title = "Fare Distribution by Passenger Class", width = 12,
                     plotlyOutput("an_fare", height = "460px")
                 )
@@ -501,6 +506,24 @@ server <- function(input, output, session) {
   output$an_box <- renderPlotly({
     an_box()
   })
+
+  output$an_age_class <- renderPlotly({
+    df <- titanic
+    df$Pclass <- factor(df$Pclass, labels = c("1st","2nd","3rd"))
+    
+    plot_ly(df, x = ~Pclass, y = ~Age,
+          split = ~Pclass,
+          type  = "box",
+          colors = c(COL_NAVY, COL_AMBER, COL_GOLD),
+          box      = list(visible = TRUE),
+          meanline = list(visible = TRUE)) |>
+    ptly() |>
+    layout(
+      showlegend = FALSE,
+      xaxis = list(title = "PClass"),
+      yaxis = list(title = "Age")
+    )
+})
   
   ## ANAKIN STUFF
   
