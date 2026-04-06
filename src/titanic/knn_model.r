@@ -259,6 +259,29 @@ K_accuracy_plot <- function (kneighbors){
             yaxis = list(title = "Accuracy", tickformat = ".0%"),
             showlegend = TRUE) %>% ptly()
 }
+
+prob_heatmap <- function(kneighbors) {
+    age_breaks  <- seq(0, 80, by = 5)
+    fare_breaks <- c(0, 10, 20, 30, 50, 100, 200, 600)
+
+    train$AgeBin  <- cut(train$Age,  breaks = age_breaks)
+    train$FareBin <- cut(train$Fare, breaks = fare_breaks)
+
+    heatmap_df <- train %>%
+        group_by(AgeBin, FareBin) %>%
+        summarise(SurvivalRate = mean(as.numeric(as.character(Survived))),
+                  Count = n(), .groups = "drop")
+
+    plot_ly(heatmap_df, x = ~AgeBin, y = ~FareBin, z = ~SurvivalRate,
+            type = "heatmap",
+            colorscale = list(c(0, "#CC0000"), c(1, "#1A6FBF")),
+            text = ~paste("Survival Rate:", round(SurvivalRate * 100), "%",
+                         "<br>Passengers:", Count),
+            hoverinfo = "text") %>%
+        layout(title = "Survival Rate by Age and Fare",
+               xaxis = list(title = "Age Group"),
+               yaxis = list(title = "Fare Range (£)")) %>% ptly()
+}
 # plot(train$Age, train$Fare,
 #      col = ifelse(train$Survived == 1, "steelblue", "tomato"),
 #      pch = 16,
