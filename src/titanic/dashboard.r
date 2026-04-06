@@ -415,6 +415,9 @@ ui <- dashboardPage(
                     plotlyOutput("accuracy_k_plot")
                   ),
                   br(),
+                  box(title = "Probability Heatmap", width = 12,
+                    plotlyOutput("heatmap")
+                  ),
                   box(title = "K comparisons", width = 12,
                     plotlyOutput("differentK")
                   ),
@@ -547,6 +550,10 @@ server <- function(input, output, session) {
   
   output$accuracy_k_plot <- renderPlotly({
     K_accuracy_plot(input$kneighbors)
+  })
+
+  output$heatmap <- renderPlotly({
+    prob_heatmap(input$kneighbors)
   })
 
   output$differentK <- renderPlotly({
