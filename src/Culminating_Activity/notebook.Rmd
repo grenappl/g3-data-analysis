@@ -1,0 +1,46 @@
+---
+title: "CG3CG3"
+author: 
+- de Pedro, Joenell Conrad
+- Florentino, Ian Miguel
+- Nacu, Drixyl Reece
+- Ruelan, Ivan Paul
+- Seno, Matthew Anakin
+date: "CG3CG3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+data <- read.csv("./src/Culminating_Activity/AI_Impact_Student_Life_2026.csv")
+head(data)
+```
+
+# Preprocessing data
+
+Apparently you don't have to convert categorical into numerical 
+values in R, it just automatically labels them with the as.factor function
+
+```{r}
+data <- data[, -1]
+# Non Ordinal
+data$Major = as.factor(data$Major)
+data$Primary_AI_Tool = as.factor(data$Primary_AI_Tool)
+data$Main_Usage_Case = as.factor(data$Main_Usage_Case)
+data$Main_Usage_Case = as.factor(data$Main_Usage_Case)
+
+# Ordinal Ranking
+data$AI_Ethics_Concern <- factor(
+  data$AI_Ethics_Concern,
+  levels = c("Low", "Medium", "High"),
+  ordered = TRUE
+)
+head(data)
+```
