@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(dplyr)
+library(car)
 ```
 
 ```{r}
@@ -29,7 +30,6 @@ Apparently you don't have to convert categorical into numerical
 values in R, it just automatically labels them with the as.factor function
 
 ```{r}
-data <- data[, -1]
 # Non Ordinal
 data$Major = as.factor(data$Major)
 data$Primary_AI_Tool = as.factor(data$Primary_AI_Tool)
@@ -43,4 +43,30 @@ data$AI_Ethics_Concern <- factor(
   ordered = TRUE
 )
 head(data)
+```
+
+```{r}
+data$GPA_Change <- data$GPA_Post_AI - data$GPA_Baseline
+model <- lm(GPA_Change ~ GPA_Baseline + Task_Frequency_Daily + 
+                         Time_Saved_Hours_Weekly + Career_Confidence_Score +
+                         Major + Main_Usage_Case, data = data)
+
+```
+
+```{r}
+scatterplotMatrix(data)
+```
+
+```{r}
+coef(model)
+summary(model)
+```
+
+```{r}
+qqnorm (residuals(model), ylab="Residuals")
+length(residuals(model))
+shapiro.test(residuals(model))
+resid_std <- scale(residuals(model)) # mean=0, sd=1
+ks.test(resid_std, "pnorm")
+
 ```
