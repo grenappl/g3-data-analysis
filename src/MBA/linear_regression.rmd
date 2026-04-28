@@ -48,49 +48,63 @@ coef(model)
 
 summary(model)
 ```
+
 # Normality
+
 ## QQplot
+
 ```{r}
 qqnorm (residuals(model), ylab="Residuals")
 qqline(residuals(model))
 ```
+
 ## Shapiro Test
+
 ```{r}
 length(residuals(model))
 shapiro.test(residuals(model))
 ```
-- Does not reject the null hypothesis
+
+-   Does not reject the null hypothesis
 
 ## Statistical Test
+
 ```{r}
 resid_std <- scale(residuals(model)) # mean=0, sd=1
 ks.test(resid_std, "pnorm")
 ```
+
 # Homoscedasticity
 
 ## Graphical Analysis of the residuals vs fitted values
+
 ```{r}
 plot(fitted(model), residuals(model))
 ```
 
 ## Statistical Test
+
 ```{r}
 library("lmtest")
 bptest(model)
 ```
-- Homoscedasticity is not present in the model since the p-value is greater than 0.05
+
+-   Homoscedasticity is not present in the model since the p-value is greater than 0.05
 
 ## Goldfeld Quandt Test
+
 ```{r}
 gqtest(model, order.by = ScienceScore ~ ., data = data)
 ```
-- GQ value > 1 suggests variance might be larger in the second segment
 
-- p-value = 0.0611 which is greater than 0.05 suggests that there is no heteroscedasticity which also makes it borderline significant
+-   GQ value \> 1 suggests variance might be larger in the second segment
 
+-   p-value = 0.0611 which is greater than 0.05 suggests that there is no heteroscedasticity which also makes it borderline significant
 
 # Multicollinearity
+
 PURPOSE OF MULTICOLLINEARITY: Check if the features are not highly correlated with each other
+
 ```{r}
 options(width = 50)
 library(car)
@@ -98,29 +112,85 @@ vif(model)
 # VIF > 5 -> moderate concern
 # VIF > 10 -> serious multicollinearity
 ```
+
 Since there is no high correlation with other independent variables, so it does not have a multicollinearity issue.
 
 # Independence Test
 
 ## Graphical Analysis of Residuals
+
 ```{r}
-n = length(residuals(mmodel))
-plot(tail(residuals(mmodel), n-1) ~
-head(residuals(mmodel), n-1),
+n = length(residuals(model))
+plot(tail(residuals(model), n-1) ~
+head(residuals(model), n-1),
 xlab=expression(hat(epsilon)[i]),
 ylab=expression(hat(epsilon)[i+1]))
 abline(h=0, v=0, col = grey(0.5))
 ```
 
 ## Statistical Test
+
 ```{r}
 dwtest(model)
 ```
-- The p-value indicates no evidence of serial correlation. Therefore, we can assume that the errors are uncorrelated
+
+-   The p-value indicates no evidence of serial correlation. Therefore, we can assume that the errors are uncorrelated
 
 # Regression Diagnostics Plot
+
 ```{r}
 par(mfrow = c(2, 2))
 plot(model)
 ```
-- Here are the diagnostic plots for each regression
+
+-   Here are the diagnostic plots for each regression
+
+
+
+
+# Additional Diagnostics Plots
+
+```{r}
+
+
+#diagnostic stuff
+
+
+# study hours
+
+
+par(mfrow = c(2, 2))
+
+
+plot(data$StudyHours, residuals(model),
+     xlab = "Study Hours", ylab = "Residuals",
+     main = "Residuals vs Study Hours")
+abline(h = 0, col = "red")
+
+
+
+#attendance
+
+plot(data$AttendanceRate, residuals(model),
+     xlab = "Attendance Rate", ylab = "Residuals",
+     main = "Residuals vs Attendance Rate")
+abline(h = 0, col = "red")
+
+
+#gender
+
+boxplot(residuals(model) ~ data$Gender,
+        xlab = "Gender", ylab = "Residuals",
+        main = "Residuals by Gender")
+abline(h = 0, col = "red")
+
+#school type
+
+boxplot(residuals(model) ~ data$SchoolType,
+        xlab = "School Type", ylab = "Residuals",
+        main = "Residuals by School Type")
+abline(h = 0, col = "red")
+
+par(mfrow = c(1, 1))  #so it turns to a grid 
+
+```
