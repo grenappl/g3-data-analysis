@@ -10,6 +10,11 @@ date: "CG3CG3"
 output: html_document
 ---
 
+Point 14 — high standardized residual (~2.5) with moderate leverage (~0.04), flagged as a potential outlier
+Point 15 — very low standardized residual (~−3) with moderate-high leverage (~0.06–0.08), flagged as a potentially influential point
+Cook's distance boundary (dashed line) — both points appear to stay within or near the boundary, suggesting they are not severely influential enough to drastically change your model coefficients
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -102,4 +107,9 @@ Changing the support or confidence thresholds affects how many rules are generat
 
 However, lowering these thresholds too much may generate many insignificant or less useful rules, so it is important to choose values that balance rule quantity and meaningful insights.
 
+
+
+Point 14 — high standardized residual (~2.5) with moderate leverage (~0.04), flagged as a potential outlier
+Point 15 — very low standardized residual (~−3) with moderate-high leverage (~0.06–0.08), flagged as a potentially influential point
+Cook's distance boundary (dashed line) — both points appear to stay within or near the boundary, suggesting they are not severely influential enough to drastically change your model coefficients
 

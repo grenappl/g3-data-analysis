@@ -23,7 +23,7 @@ library(ggplot2)
 ```
 
 ```{r}
-data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
+data <- read.csv("./src/Culminating_Activity/AI_Impact_Student_Life_2026.csv")
 head(data)
 ```
 
@@ -34,15 +34,17 @@ values in R, it just automatically labels them with the as.factor function
 
 ```{r}
 # Non Ordinal
-sum(is.na(data))
-
-
-# # Ordinal Ranking
-# data$AI_Ethics_Concern <- factor(
-#   data$AI_Ethics_Concern,
-#   levels = c("Low", "Medium", "High"),
-#   ordered = TRUE
-# )
+data$Major = as.factor(data$Major)
+data$Primary_AI_Tool = as.factor(data$Primary_AI_Tool)
+data$Main_Usage_Case = as.factor(data$Main_Usage_Case)
+data$Main_Usage_Case = as.factor(data$Main_Usage_Case)
+ 
+# Ordinal Ranking
+data$AI_Ethics_Concern <- factor(
+  data$AI_Ethics_Concern,
+  levels = c("Low", "Medium", "High"),
+  ordered = TRUE
+)
 head(data)
 ```
 
