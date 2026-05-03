@@ -147,3 +147,9 @@ tidy_model %>%
   filter(p.value >= 0.05) %>%
   arrange(desc(p.value))
 ```
+
+# Model Diagnostics
+```{r}
+par(mfrow = c(2, 2))
+plot(model)
+```

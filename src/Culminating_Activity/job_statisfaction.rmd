@@ -1,0 +1,157 @@
+---
+title: "CG3CG3"
+author: 
+- de Pedro, Joenell Conrad
+- Florentino, Ian Miguel
+- Nacu, Drixyl Reece
+- Ruelan, Ivan Paul
+- Seno, Matthew Anakin
+date: "CG3CG3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(class)     
+library(caret) 
+```
+
+```{r}
+rm(list = ls())
+data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
+head(data)
+```
+
+# Load and Inspect Data
+Apparently you don't have to convert categorical into numerical 
+values in R, it just automatically labels them with the as.factor function
+
+```{r}
+sum(is.na(data$ai_tools_used))
+head(data)
+print("GLIMPSE")
+glimpse(data)
+print("SUMMARY")
+summary(data)
+```
+
+# Preprocessing Data
+```{r}
+data <- data %>%
+  mutate(
+    n_languages  = str_count(languages_used,  ";") + 1,
+    n_frameworks = str_count(frameworks_used, ";") + 1,
+    n_databases  = str_count(databases_used,  ";") + 1,
+    n_cloud      = str_count(cloud_platforms_used, ";") + 1
+  )
+
+# --- Binary flags for top 10 languages ---
+top_languages <- data %>%
+  pull(languages_used) %>%
+  str_split(";") %>%
+  unlist() %>%
+  str_trim() %>%
+  table() %>%
+  sort(decreasing = TRUE) %>%
+  head(10) %>%
+  names()
+
+for (lang in top_languages) {
+  col_name <- paste0("lang_", make_clean_names(lang))
+  data[[col_name]] <- as.integer(str_detect(data$languages_used, fixed(lang)))
+}
+
+lang_cols <- paste0("lang_", make_clean_names(top_languages))
+```
+
+```{r}
+# --- Encode categoricals as numeric (required by KNN) ---
+data_model <- data %>%
+  filter(annual_salary_usd > 0) %>%
+  mutate(
+    # Target — factor with 5 levels
+    job_satisfaction = factor(job_satisfaction),
+
+    # Ordinal encodings (numeric ranking)
+    education_num = case_when(
+      education_level == "Less than high school" ~ 1,
+      education_level == "Some high school"      ~ 2,
+      education_level == "High school diploma"   ~ 3,
+      education_level == "Some college"          ~ 4,
+      education_level == "Associate's degree"    ~ 5,
+      education_level == "Bachelor's degree"     ~ 6,
+      education_level == "Master's degree"       ~ 7,
+      education_level == "Professional degree"   ~ 8,
+      education_level == "Doctoral degree"       ~ 9
+    ),
+    company_size_num = case_when(
+      company_size == "1-10"       ~ 1,
+      company_size == "11-50"      ~ 2,
+      company_size == "51-200"     ~ 3,
+      company_size == "201-1000"   ~ 4,
+      company_size == "1001-5000"  ~ 5,
+      company_size == "5000-10000" ~ 6,
+      company_size == "10000+"     ~ 7
+    ),
+    burnout_num = case_when(
+      burnout_frequency == "Never"     ~ 1,
+      burnout_frequency == "Rarely"    ~ 2,
+      burnout_frequency == "Sometimes" ~ 3,
+      burnout_frequency == "Often"     ~ 4,
+      burnout_frequency == "Always"    ~ 5
+    ),
+    ai_usage_num = case_when(
+      ai_usage_frequency == "Never"               ~ 1,
+      ai_usage_frequency == "Rarely"              ~ 2,
+      ai_usage_frequency == "Monthly"             ~ 3,
+      ai_usage_frequency == "Weekly"              ~ 4,
+      ai_usage_frequency == "Daily"               ~ 5,
+      ai_usage_frequency == "Multiple times daily"~ 6
+    ),
+    remote_pref_num = case_when(
+      remote_work_preference_1to5 == 1 ~ 1,
+      remote_work_preference_1to5 == 2 ~ 2,
+      remote_work_preference_1to5 == 3 ~ 3,
+      remote_work_preference_1to5 == 4 ~ 4,
+      remote_work_preference_1to5 == 5 ~ 5
+    ),
+
+    # Nominal → integer encoding
+    gender_num            = as.integer(factor(gender)),
+    role_num              = as.integer(factor(role)),
+    country_num           = as.integer(factor(country)),
+    employment_num        = as.integer(factor(employment_status)),
+    work_mode_num         = as.integer(factor(work_mode)),
+    primary_os_num        = as.integer(factor(primary_os)),
+    ai_sentiment_num      = as.integer(factor(ai_sentiment)),
+    ai_threat_num         = as.integer(factor(ai_job_threat_perception)),
+    learning_source_num   = as.integer(factor(primary_learning_source)),
+    looking_for_job_num   = as.integer(factor(looking_for_job))
+  ) %>%
+  select(
+    job_satisfaction,
+    # Numeric as-is
+    age, years_of_experience, coding_hours_per_week,
+    annual_salary_usd, career_satisfaction,
+    ai_productivity_boost_pct, open_source_contributor,
+    n_languages, n_frameworks, n_databases, n_cloud,
+    # Ordinal encodings
+    education_num, company_size_num, burnout_num,
+    ai_usage_num, remote_pref_num,
+    # Nominal encodings
+    gender_num, role_num, country_num, employment_num,
+    work_mode_num, primary_os_num, ai_sentiment_num,
+    ai_threat_num, learning_source_num, looking_for_job_num,
+    # Language flags
+    all_of(lang_cols)
+  ) %>%
+  drop_na()
+
+cat("Rows ready for KNN:", nrow(data_model), "\n")
+
+```

@@ -138,3 +138,9 @@ tidy(model) %>%
 # Overall model fit
 glance(model)
 ```
+
+# Model Diagnostics
+```{r}
+par(mfrow = c(2, 2))
+plot(model)
+```
