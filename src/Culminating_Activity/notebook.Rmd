@@ -27,76 +27,123 @@ data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
 head(data)
 ```
 
-# Preprocessing data
-
+# Load and Inspect Data
 Apparently you don't have to convert categorical into numerical 
 values in R, it just automatically labels them with the as.factor function
 
 ```{r}
-# Non Ordinal
-sum(is.na(data))
-
-
-# # Ordinal Ranking
-# data$AI_Ethics_Concern <- factor(
-#   data$AI_Ethics_Concern,
-#   levels = c("Low", "Medium", "High"),
-#   ordered = TRUE
-# )
+sum(is.na(data$ai_tools_used))
 head(data)
+print("GLIMPSE")
+glimpse(data)
+print("SUMMARY")
+summary(data)
 ```
 
+# Preprocessing Data
+
 ```{r}
-df_cluster <- data %>%
-  select(Age, Task_Frequency_Daily, Time_Saved_Hours_Weekly,
-         GPA_Baseline, GPA_Post_AI, Career_Confidence_Score)
-df_scaled <- scale(df_cluster)
+data_clean <- data %>%
+  
+  select(-respondent_id, -languages_used, -frameworks_used,
+         -databases_used, -cloud_platforms_used, -ide_editor,
+         -want_to_learn_next, -ai_tools_used) %>%   # ai_tools_used has ~20% NAs
+  
+  mutate(
+    education_level = factor(education_level,
+      levels = c("Less than high school", "Some high school",
+                 "High school diploma", "Some college",
+                 "Associate's degree", "Bachelor's degree",
+                 "Master's degree", "Professional degree",
+                 "Doctoral degree"),
+      ordered = TRUE),
+    
+    company_size = factor(company_size,
+      levels = c("1-10", "11-50", "51-200", "201-1000",
+                 "1001-5000", "5000-10000", "10000+"),
+      ordered = TRUE),
+    
+    burnout_frequency = factor(burnout_frequency,
+      levels = c("Never", "Rarely", "Sometimes", "Often", "Always"),
+      ordered = TRUE),
+    
+    ai_usage_frequency = factor(ai_usage_frequency,
+      levels = c("Never", "Rarely", "Monthly", "Weekly",
+                 "Daily", "Multiple times daily"),
+      ordered = TRUE),
+    
+    gender              = factor(gender),
+    role                = factor(role),
+    employment_status   = factor(employment_status),
+    work_mode           = factor(work_mode),
+    primary_os          = factor(primary_os),
+    ai_sentiment        = factor(ai_sentiment),
+    ai_job_threat_perception = factor(ai_job_threat_perception),
+    primary_learning_source  = factor(primary_learning_source),
+    looking_for_job     = factor(looking_for_job),
+    country             = factor(country)
+  ) %>%
+  
+  filter(annual_salary_usd > 0) %>%
+  
+  mutate(log_salary = log(annual_salary_usd))
 
-wss <- map_dbl(1:10, ~kmeans(df_scaled, centers = .x, nstart = 25)$tot.withinss)
-plot(1:10, wss, type = "b", xlab = "Number of Clusters", ylab = "WSS")
-
-# Fit model
-set.seed(42)
-kmeans_model <- kmeans(df_scaled, centers = 3, nstart = 25)
-data$Cluster <- as.factor(kmeans_model$cluster)
-
+cat("Rows after cleaning:", nrow(data_clean), "\n")
 ```
 
+# Explaratory Data Analysis
 ```{r}
-pca <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
-summary(pca)  # how much variance each component explains
+par(mfrow = c(1, 2))
+hist(data_clean$annual_salary_usd, main = "Raw Salary", col = "steelblue")
+hist(data_clean$log_salary,        main = "Log Salary", col = "tomato")
 
-# Visualize
-pca_df <- as.data.frame(pca$x)
-pca_df$Major <- data$Major
+# Correlation of numeric predictors vs log_salary
+num_cols <- data_clean %>%
+  select(where(is.numeric)) %>%
+  select(-annual_salary_usd, -survey_year)
 
-ggplot(pca_df, aes(x = PC1, y = PC2, color = Major)) +
-  geom_point(alpha = 0.6) +
-  labs(title = "PCA of Student AI Usage")
+cor(num_cols, use = "complete.obs") %>%
+  as.data.frame() %>%
+  select(log_salary) %>%
+  arrange(desc(abs(log_salary)))
 ```
 
+# Model Fitting
 ```{r}
-data$GPA_Change <- data$GPA_Post_AI - data$GPA_Baseline
-model <- lm(GPA_Post_AI ~ GPA_Baseline + Task_Frequency_Daily + 
-                         Time_Saved_Hours_Weekly +
-                         Major + Main_Usage_Case, data = data)
-
+model <- lm(
+  log_salary ~
+    years_of_experience +
+    age +
+    coding_hours_per_week +
+    education_level +
+    role +
+    employment_status +
+    company_size +
+    work_mode +
+    gender +
+    primary_os +
+    ai_productivity_boost_pct +
+    ai_usage_frequency +
+    burnout_frequency +
+    remote_work_preference_1to5 +
+    open_source_contributor,
+  data = data_clean
+)
 ```
 
+# Model Summary
 ```{r}
-scatterplotMatrix(data)
-```
-
-```{r}
-coef(model)
 summary(model)
-```
+anova(model)
 
-```{r}
-qqnorm (residuals(model), ylab="Residuals")
-length(residuals(model))
-shapiro.test(residuals(model))
-resid_std <- scale(residuals(model)) # mean=0, sd=1
-ks.test(resid_std, "pnorm")
+tidy_model <- broom::tidy(model)
 
+tidy_model %>%
+  filter(p.value < 0.05) %>%
+  arrange(p.value) %>%
+  print(n = 50)
+
+tidy_model %>%
+  filter(p.value >= 0.05) %>%
+  arrange(desc(p.value))
 ```
