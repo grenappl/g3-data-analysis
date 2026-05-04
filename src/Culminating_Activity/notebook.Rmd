@@ -23,7 +23,7 @@ library(ggplot2)
 ```
 
 ```{r}
-data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
+data <- read.csv("developer_survey.csv")
 head(data)
 ```
 

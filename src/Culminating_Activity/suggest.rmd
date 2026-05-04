@@ -24,7 +24,7 @@ library(janitor)
 ```
 
 ```{r}
-data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
+data <- read.csv("developer_survey.csv")
 head(data)
 ```
 
@@ -51,8 +51,7 @@ data <- data %>%
     n_frameworks = str_count(frameworks_used, ";") + 1
   )
 
-# --- Binary flags for top languages ---
-# Find the most frequent languages across all respondents
+
 top_languages <- data %>%
   pull(languages_used) %>%
   str_split(";") %>%
@@ -66,7 +65,6 @@ top_languages <- data %>%
 cat("Top 10 languages:\n")
 print(top_languages)
 
-# Create one binary column per top language
 for (lang in top_languages) {
   col_name <- paste0("lang_", janitor::make_clean_names(lang))
   data[[col_name]] <- as.integer(str_detect(data$languages_used, fixed(lang)))
