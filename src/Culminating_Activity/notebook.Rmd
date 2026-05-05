@@ -23,7 +23,8 @@ library(ggplot2)
 ```
 
 ```{r}
-data <- read.csv("developer_survey.csv")
+# data <- read.csv("developer_survey.csv")
+data <- read.csv("./Culminating_Activity/developer_survey.csv")
 head(data)
 ```
 
@@ -126,6 +127,7 @@ model <- lm(
     ai_usage_frequency +
     burnout_frequency +
     remote_work_preference_1to5 +
+    country +
     open_source_contributor,
   data = data_clean
 )
@@ -146,6 +148,88 @@ tidy_model %>%
 tidy_model %>%
   filter(p.value >= 0.05) %>%
   arrange(desc(p.value))
+```
+
+
+# Model Versions
+## Model v2: Remove non-significant predictors
+```{r}
+model_v2 <- lm(
+  log_salary ~
+    years_of_experience +
+    employment_status +
+    role +
+    coding_hours_per_week +
+    age +
+    education_level,
+  data = data_clean
+)
+
+summary(model_v2)
+anova(model_v2)
+```
+
+## Model v3: Add country 
+```{r}
+model_v3 <- lm(
+  log_salary ~
+    years_of_experience +
+    employment_status +
+    role +
+    coding_hours_per_week +
+    age +
+    education_level +
+    country,          
+  data = data_clean
+)
+
+summary(model_v3)
+anova(model_v3)
+```
+
+## Model v4: Dropped Coding Hours per Week
+- Since it is not significant in v3, we will drop it in v4
+```{r}  
+model_v4 <- lm(
+  log_salary ~
+    years_of_experience +
+    employment_status +
+    role +
+    coding_hours_per_week +
+    age +
+    education_level +
+    country,          
+  data = data_clean
+)
+
+summary(model_v4)
+anova(model_v4)
+
+```
+
+## Cross Validation Testing
+```{r}
+library(caret)
+
+set.seed(33)
+cv_control <- trainControl(method = "cv", number = 10)  # 10-fold CV
+
+model_cv <- train(
+  log_salary ~
+    years_of_experience +
+    employment_status +
+    role +
+    age +
+    education_level +
+    country,
+  data    = data_clean,
+  method  = "lm",
+  trControl = cv_control,
+  na.action = na.omit
+)
+
+print(model_cv)
+model_cv$results   # compare CV R² vs your in-sample R² of 0.9229
 ```
 
 # Model Diagnostics
