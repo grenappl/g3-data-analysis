@@ -207,12 +207,14 @@ anova(model_v4)
 
 ```
 
+# Model Validation (Checking if it is Overfitting or Underfitting)
+
 ## Cross Validation Testing
 ```{r}
 library(caret)
 
 set.seed(33)
-cv_control <- trainControl(method = "cv", number = 10)  # 10-fold CV
+cv_control <- trainControl(method = "cv", number = 10)  
 
 model_cv <- train(
   log_salary ~
@@ -229,11 +231,41 @@ model_cv <- train(
 )
 
 print(model_cv)
-model_cv$results   # compare CV R² vs your in-sample R² of 0.9229
+model_cv$results  
 ```
 
-# Model Diagnostics
+## Train Test Split
+```{r}
+set.seed(33)
+train_idx <- sample(nrow(data_clean), 0.8 * nrow(data_clean))
+train_data <- data_clean[ train_idx, ]
+test_data  <- data_clean[-train_idx, ]
+
+model_train <- lm(
+  log_salary ~
+    years_of_experience +
+    employment_status +
+    role + age +
+    education_level +
+    country,
+  data = train_data
+)
+
+preds <- predict(model_train, newdata = test_data)
+test_r2 <- cor(preds, test_data$log_salary, use = "complete.obs")^2
+cat("Test R²:", round(test_r2, 4), "\n")
+cat("Train R²:", summary(model_train)$r.squared, "\n")
+```
+
+# Diagnostic Testing for da Model 
 ```{r}
 par(mfrow = c(2, 2))
 plot(model)
 ```
+
+# Statistical Tests
+```{r}
+# Normality
+length(residuals(model_v4))
+```
+
