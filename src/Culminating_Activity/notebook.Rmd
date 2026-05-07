@@ -14,25 +14,28 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r libraries}
 library(dplyr)
-library(car)
 library(tidyverse)
-library(cluster)
 library(ggplot2)
+library(cluster)
+library(car)
+library(broom)
+library(MASS)
+library(leaps)
+
+# Pin select to dplyr — prevents MASS from masking it
+select <- dplyr::select
 ```
 
-```{r}
-# data <- read.csv("developer_survey.csv")
-data <- read.csv("./Culminating_Activity/developer_survey.csv")
+```{r load_data}
+data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
 head(data)
 ```
 
 # Load and Inspect Data
-Apparently you don't have to convert categorical into numerical 
-values in R, it just automatically labels them with the as.factor function
 
-```{r}
+```{r inspect}
 sum(is.na(data$ai_tools_used))
 head(data)
 print("GLIMPSE")
@@ -43,74 +46,155 @@ summary(data)
 
 # Preprocessing Data
 
-```{r}
+```{r missing_summary}
+missing_summary <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  mutate(pct_missing = round(n_missing / nrow(data) * 100, 1)) %>%
+  filter(n_missing > 0) %>%
+  arrange(desc(pct_missing))
+
+print(missing_summary)
+```
+
+```{r data_clean}
 data_clean <- data %>%
-  
-  select(-respondent_id, -languages_used, -frameworks_used,
-         -databases_used, -cloud_platforms_used, -ide_editor,
-         -want_to_learn_next, -ai_tools_used) %>%   # ai_tools_used has ~20% NAs
-  
+
+  dplyr::select(-respondent_id, -languages_used, -frameworks_used,
+                -databases_used, -cloud_platforms_used, -ide_editor,
+                -want_to_learn_next, -ai_tools_used) %>%
+
+  # Impute with median for numeric columns (central tendency)
   mutate(
+    years_of_experience         = ifelse(is.na(years_of_experience),
+                                    median(years_of_experience, na.rm = TRUE),
+                                    years_of_experience),
+    age                         = ifelse(is.na(age),
+                                    median(age, na.rm = TRUE), age),
+    coding_hours_per_week       = ifelse(is.na(coding_hours_per_week),
+                                    median(coding_hours_per_week, na.rm = TRUE),
+                                    coding_hours_per_week),
+    ai_productivity_boost_pct   = ifelse(is.na(ai_productivity_boost_pct),
+                                    median(ai_productivity_boost_pct, na.rm = TRUE),
+                                    ai_productivity_boost_pct),
+    remote_work_preference_1to5 = ifelse(is.na(remote_work_preference_1to5),
+                                    median(remote_work_preference_1to5, na.rm = TRUE),
+                                    remote_work_preference_1to5)
+  ) %>%
+
+  # Impute with mode for categorical columns (most common category)
+  mutate(
+    across(
+      c(gender, role, employment_status, work_mode, primary_os,
+        ai_sentiment, ai_job_threat_perception, primary_learning_source,
+        looking_for_job, country, open_source_contributor),
+      ~ {
+        mode_val <- names(sort(table(.), decreasing = TRUE))[1]
+        ifelse(is.na(.), mode_val, .)
+      }
+    )
+  ) %>%
+
+  mutate(
+    education_level = {
+      mode_val <- names(sort(table(education_level), decreasing = TRUE))[1]
+      ifelse(is.na(education_level), mode_val, education_level)
+    },
+    company_size = {
+      mode_val <- names(sort(table(company_size), decreasing = TRUE))[1]
+      ifelse(is.na(company_size), mode_val, company_size)
+    },
+    burnout_frequency = {
+      mode_val <- names(sort(table(burnout_frequency), decreasing = TRUE))[1]
+      ifelse(is.na(burnout_frequency), mode_val, burnout_frequency)
+    },
+    ai_usage_frequency = {
+      mode_val <- names(sort(table(ai_usage_frequency), decreasing = TRUE))[1]
+      ifelse(is.na(ai_usage_frequency), mode_val, ai_usage_frequency)
+    }
+  ) %>%
+
+  mutate(
+
     education_level = factor(education_level,
-      levels = c("Less than high school", "Some high school",
-                 "High school diploma", "Some college",
-                 "Associate's degree", "Bachelor's degree",
-                 "Master's degree", "Professional degree",
-                 "Doctoral degree"),
+      levels = c("High school",
+                 "Some college",
+                 "Associate degree",
+                 "Self-taught / Bootcamp",
+                 "Bachelor's degree",
+                 "Master's degree",
+                 "Doctorate (PhD)"),
       ordered = TRUE),
-    
+
+    # CSV values: "1-10", "11-50", "51-200", "201-1000",
+    #             "1001-5000", "5001-10000", "10000+"
     company_size = factor(company_size,
       levels = c("1-10", "11-50", "51-200", "201-1000",
-                 "1001-5000", "5000-10000", "10000+"),
+                 "1001-5000", "5001-10000", "10000+"),
       ordered = TRUE),
-    
+
     burnout_frequency = factor(burnout_frequency,
       levels = c("Never", "Rarely", "Sometimes", "Often", "Always"),
       ordered = TRUE),
-    
+
     ai_usage_frequency = factor(ai_usage_frequency,
       levels = c("Never", "Rarely", "Monthly", "Weekly",
                  "Daily", "Multiple times daily"),
       ordered = TRUE),
-    
-    gender              = factor(gender),
-    role                = factor(role),
-    employment_status   = factor(employment_status),
-    work_mode           = factor(work_mode),
-    primary_os          = factor(primary_os),
-    ai_sentiment        = factor(ai_sentiment),
+
+    gender                   = factor(gender),
+    role                     = factor(role),
+    employment_status        = factor(employment_status),
+    work_mode                = factor(work_mode),
+    primary_os               = factor(primary_os),
+    ai_sentiment             = factor(ai_sentiment),
     ai_job_threat_perception = factor(ai_job_threat_perception),
     primary_learning_source  = factor(primary_learning_source),
-    looking_for_job     = factor(looking_for_job),
-    country             = factor(country)
+    looking_for_job          = factor(looking_for_job),
+    country                  = factor(country)
   ) %>%
-  
-  filter(annual_salary_usd > 0) %>%
-  
-  mutate(log_salary = log(annual_salary_usd))
 
-cat("Rows after cleaning:", nrow(data_clean), "\n")
+  filter(!is.na(annual_salary_usd), annual_salary_usd > 0) %>%
+  mutate(log_salary = log(annual_salary_usd))
 ```
 
-# Explaratory Data Analysis
-```{r}
+```{r verify_clean}
+cat("Rows after cleaning:", nrow(data_clean), "\n")
+
+remaining_na <- data_clean %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  filter(n_missing > 0)
+
+if (nrow(remaining_na) == 0) {
+  cat("No missing values remaining.\n")
+} else {
+  cat("WARNING: Missing values still present:\n")
+  print(remaining_na)
+}
+```
+
+# Exploratory Data Analysis
+
+```{r eda}
 par(mfrow = c(1, 2))
 hist(data_clean$annual_salary_usd, main = "Raw Salary", col = "steelblue")
 hist(data_clean$log_salary,        main = "Log Salary", col = "tomato")
 
 # Correlation of numeric predictors vs log_salary
 num_cols <- data_clean %>%
-  select(where(is.numeric)) %>%
-  select(-annual_salary_usd, -survey_year)
+  dplyr::select(where(is.numeric)) %>%
+  dplyr::select(-annual_salary_usd, -survey_year)
 
 cor(num_cols, use = "complete.obs") %>%
   as.data.frame() %>%
-  select(log_salary) %>%
+  dplyr::select(log_salary) %>%
   arrange(desc(abs(log_salary)))
 ```
 
 # Model Fitting
-```{r}
+
+```{r model_base}
 model <- lm(
   log_salary ~
     years_of_experience +
@@ -134,26 +218,30 @@ model <- lm(
 ```
 
 # Model Summary
-```{r}
+
+```{r model_summary}
 summary(model)
 anova(model)
 
 tidy_model <- broom::tidy(model)
 
+cat("\n--- Significant predictors (p < 0.05) ---\n")
 tidy_model %>%
   filter(p.value < 0.05) %>%
   arrange(p.value) %>%
   print(n = 50)
 
+cat("\n--- Non-significant predictors (p >= 0.05) ---\n")
 tidy_model %>%
   filter(p.value >= 0.05) %>%
   arrange(desc(p.value))
 ```
 
+# Model Versions (Manual)
 
-# Model Versions
 ## Model v2: Remove non-significant predictors
-```{r}
+
+```{r model_v2}
 model_v2 <- lm(
   log_salary ~
     years_of_experience +
@@ -169,8 +257,9 @@ summary(model_v2)
 anova(model_v2)
 ```
 
-## Model v3: Add country 
-```{r}
+## Model v3: Add country
+
+```{r model_v3}
 model_v3 <- lm(
   log_salary ~
     years_of_experience +
@@ -179,7 +268,7 @@ model_v3 <- lm(
     coding_hours_per_week +
     age +
     education_level +
-    country,          
+    country,
   data = data_clean
 )
 
@@ -187,85 +276,315 @@ summary(model_v3)
 anova(model_v3)
 ```
 
-## Model v4: Dropped Coding Hours per Week
-- Since it is not significant in v3, we will drop it in v4
-```{r}  
+## Model v4: Drop coding_hours_per_week (not significant in v3)
+
+```{r model_v4}
 model_v4 <- lm(
   log_salary ~
     years_of_experience +
     employment_status +
     role +
-    coding_hours_per_week +
     age +
     education_level +
-    country,          
+    country,
   data = data_clean
 )
 
 summary(model_v4)
 anova(model_v4)
-
 ```
 
-# Model Validation (Checking if it is Overfitting or Underfitting)
+# Variable Selection
 
-## Cross Validation Testing
-```{r}
-library(caret)
+## Full Model (baseline for selection)
 
-set.seed(33)
-cv_control <- trainControl(method = "cv", number = 10)  
-
-model_cv <- train(
-  log_salary ~
-    years_of_experience +
-    employment_status +
-    role +
-    age +
-    education_level +
-    country,
-  data    = data_clean,
-  method  = "lm",
-  trControl = cv_control,
-  na.action = na.omit
+```{r vs_full}
+model_full <- lm(
+  log_salary ~ years_of_experience + age + coding_hours_per_week +
+    education_level + role + employment_status + company_size +
+    work_mode + gender + primary_os + ai_productivity_boost_pct +
+    ai_usage_frequency + burnout_frequency + remote_work_preference_1to5 +
+    country + open_source_contributor,
+  data = data_clean
 )
 
-print(model_cv)
-model_cv$results  
+summary(model_full)
+AIC(model_full)
+BIC(model_full)
 ```
 
-## Train Test Split
-```{r}
-set.seed(33)
-train_idx <- sample(nrow(data_clean), 0.8 * nrow(data_clean))
-train_data <- data_clean[ train_idx, ]
-test_data  <- data_clean[-train_idx, ]
+## Backward Elimination by p-value
 
-model_train <- lm(
-  log_salary ~
-    years_of_experience +
-    employment_status +
-    role + age +
-    education_level +
-    country,
-  data = train_data
+```{r vs_backward}
+drop1(model_full, test = "F")
+
+# Adjust variables below based on YOUR actual drop1 output (drop where p > 0.05)
+model_backward_pval2 <- update(model_full, . ~ . - gender - primary_os - burnout_frequency)
+summary(model_backward_pval2)
+
+drop1(model_backward_pval2, test = "F")
+```
+
+## Stepwise AIC (both directions)
+
+```{r vs_aic}
+model_step_aic <- stepAIC(model_full, direction = "both", trace = TRUE)
+summary(model_step_aic)
+AIC(model_step_aic)
+BIC(model_step_aic)
+```
+
+## Stepwise BIC (penalizes complexity more)
+
+```{r vs_bic}
+n <- nrow(data_clean)
+model_step_bic <- stepAIC(model_full, direction = "both", k = log(n), trace = TRUE)
+summary(model_step_bic)
+AIC(model_step_bic)
+BIC(model_step_bic)
+```
+
+## Theory-Driven Reduced Model
+
+```{r vs_theory}
+model_theory <- lm(
+  log_salary ~ years_of_experience + education_level + role +
+    employment_status + company_size + work_mode + country,
+  data = data_clean
 )
 
-preds <- predict(model_train, newdata = test_data)
-test_r2 <- cor(preds, test_data$log_salary, use = "complete.obs")^2
-cat("Test R²:", round(test_r2, 4), "\n")
-cat("Train R²:", summary(model_train)$r.squared, "\n")
+summary(model_theory)
+AIC(model_theory)
+BIC(model_theory)
 ```
 
-# Diagnostic Testing for da Model 
+## VIF Check — Remove High Multicollinearity (VIF > 5)
+
+```{r vs_vif}
+vif(model_full)
+
+model_no_collinear <- lm(
+  log_salary ~ years_of_experience + coding_hours_per_week +
+    education_level + role + employment_status + company_size +
+    work_mode + gender + primary_os + ai_productivity_boost_pct +
+    ai_usage_frequency + burnout_frequency + remote_work_preference_1to5 +
+    country + open_source_contributor,
+  data = data_clean
+)
+
+vif(model_no_collinear)
+summary(model_no_collinear)
+```
+
+## Model Comparison Table (All Models)
+
+```{r model_comparison}
+models <- list(
+  Full            = model_full,
+  Manual_v2       = model_v2,
+  Manual_v3       = model_v3,
+  Manual_v4       = model_v4,
+  Backward_Pval   = model_backward_pval2,
+  Stepwise_AIC    = model_step_aic,
+  Stepwise_BIC    = model_step_bic,
+  Theory_Driven   = model_theory,
+  No_Collinear    = model_no_collinear
+)
+
+comparison <- data.frame(
+  Model    = names(models),
+  R2       = sapply(models, function(m) round(summary(m)$r.squared, 4)),
+  Adj_R2   = sapply(models, function(m) round(summary(m)$adj.r.squared, 4)),
+  AIC      = sapply(models, function(m) round(AIC(m), 2)),
+  BIC      = sapply(models, function(m) round(BIC(m), 2)),
+  Num_Vars = sapply(models, function(m) length(coef(m)) - 1)
+)
+
+comparison <- comparison[order(comparison$Adj_R2, decreasing = TRUE), ]
+print(comparison)
+
+cat("\nBest model by Adj R2:", comparison$Model[1], "\n")
+cat("Best model by AIC:   ", comparison$Model[which.min(comparison$AIC)], "\n")
+cat("Best model by BIC:   ", comparison$Model[which.min(comparison$BIC)], "\n")
+```
+
+# Final Model Summary
 ```{r}
+final_model <- model_full
+summary(final_model)
+anova(final_model)
+```
+
+# Diagnostic Plots for Final Model
+## Residual Plots
+```{r}
+
 par(mfrow = c(2, 2))
-plot(model)
+plot(final_model)
+par(mfrow = c(1, 1))
+```
+## Q-Q Plot
+```{r}
+par(mfrow = c(1, 2))
+
+qqnorm(residuals(final_model), main = "Normal Q-Q Plot of Residuals")
+qqline(residuals(final_model), col = "red", lwd = 2)
+
+# Visual: Histogram of residuals
+hist(residuals(final_model),
+     breaks = 50,
+     col    = "steelblue",
+     main   = "Histogram of Residuals",
+     xlab   = "Residuals")
+curve(dnorm(x,
+            mean = mean(residuals(final_model)),
+            sd   = sd(residuals(final_model))) * length(residuals(final_model)) *
+        diff(hist(residuals(final_model), breaks = 50, plot = FALSE)$breaks)[1],
+      add = TRUE, col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+
+```
+### Shapiro Walk
+```{r}
+set.seed(33)
+resid_sample <- sample(residuals(final_model), min(5000, length(residuals(final_model))))
+shapiro_result <- shapiro.test(resid_sample)
+print(shapiro_result)
+cat("Shapiro-Wilk: W =", round(shapiro_result$statistic, 4),
+    " | p-value =", shapiro_result$p.value, "\n")
+cat("Normality assumption:", ifelse(shapiro_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
+
+ks_result <- ks.test(residuals(final_model), "pnorm",
+                     mean = mean(residuals(final_model)),
+                     sd   = sd(residuals(final_model)))
+print(ks_result)
+cat("KS Test: D =", round(ks_result$statistic, 4),
+    " | p-value =", ks_result$p.value, "\n")
+cat("Normality assumption:", ifelse(ks_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
+```
+## HOMOSCEDASTICITY 
+### Residual vs Fitted
+```{r}
+plot(fitted(final_model), residuals(final_model),
+     main = "Residuals vs Fitted",
+     xlab = "Fitted Values",
+     ylab = "Residuals",
+     pch  = 20, col = rgb(0, 0, 1, 0.3))
+abline(h = 0, col = "red", lwd = 2)
+lines(lowess(fitted(final_model), residuals(final_model)), col = "orange", lwd = 2)
 ```
 
-# Statistical Tests
+### Scale-location Plot
 ```{r}
-# Normality
-length(residuals(model_v4))
+plot(fitted(final_model), sqrt(abs(residuals(final_model))),
+     main = "Scale-Location",
+     xlab = "Fitted Values",
+     ylab = expression(sqrt("|Residuals|")),
+     pch  = 20, col = rgb(0, 0, 1, 0.3))
+lines(lowess(fitted(final_model), sqrt(abs(residuals(final_model)))),
+      col = "red", lwd = 2)
+```
+### BPtest
+```{r}
+if (!require(lmtest)) install.packages("lmtest")
+library(lmtest)
+
+bp_result <- bptest(final_model)
+print(bp_result)
+cat("Breusch-Pagan: BP =", round(bp_result$statistic, 4),
+    " | p-value =", bp_result$p.value, "\n")
+cat("Homoscedasticity assumption:", ifelse(bp_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
+```
+
+## Multicollinearity Check
+```{r}
+vif_vals <- vif(final_model)
+print(vif_vals)
+
+cat("\n--- VIF > 5 (moderate concern) ---\n")
+print(vif_vals[vif_vals > 5])
+
+cat("\n--- VIF > 10 (severe concern) ---\n")
+print(vif_vals[vif_vals > 10])
+
+cat("Multicollinearity assumption:", 
+    ifelse(all(vif_vals < 10), "PASSED (no VIF > 10)", "VIOLATED"), "\n\n")
+```
+
+## Independence Check (Durbin-Watson Test)
+```{r}
+
+dw_result <- dwtest(final_model)
+print(dw_result)
+cat("Durbin-Watson: DW =", round(dw_result$statistic, 4),
+    " | p-value =", dw_result$p.value, "\n")
+cat("Independence assumption:", 
+    ifelse(dw_result$statistic > 1.5 & dw_result$statistic < 2.5,
+           "PASSED", "CHECK — DW outside 1.5–2.5 range"), "\n\n")
+
+```
+## Cooks Distance
+```{r}
+cooksd    <- cooks.distance(final_model)
+threshold <- 4 / nrow(data_clean)   
+
+influential <- which(cooksd > threshold)
+cat("Number of influential points (Cook's D > 4/n):", length(influential), "\n")
+cat("That's", round(length(influential) / nrow(data_clean) * 100, 1), "% of observations\n\n")
+
+# Visual
+plot(cooksd, type = "h",
+     main = "Cook's Distance",
+     ylab = "Cook's Distance",
+     xlab = "Observation Index",
+     col  = ifelse(cooksd > threshold, "red", "steelblue"))
+abline(h = threshold, col = "red", lty = 2)
+legend("topright", legend = paste0("Threshold = 4/n = ", round(threshold, 5)),
+       col = "red", lty = 2)
+
+cat("Top 10 most influential observations:\n")
+top_influential <- sort(cooksd, decreasing = TRUE)[1:10]
+print(round(top_influential, 6))
+```
+
+## Leverage (Hat Values)
+```{r}
+hat_vals  <- hatvalues(final_model)
+p         <- length(coef(final_model))     # number of parameters
+n         <- nrow(data_clean)
+lev_threshold <- 2 * p / n                # common rule: 2p/n
+
+high_leverage <- which(hat_vals > lev_threshold)
+cat("\nHigh leverage points (hat > 2p/n =", round(lev_threshold, 4), "):",
+    length(high_leverage), "\n")
+```
+
+## Summary
+```{r}
+cat("\n============================================================\n")
+cat("DIAGNOSTIC SUMMARY\n")
+cat("============================================================\n")
+cat(sprintf("%-30s %-10s %s\n", "Test", "Result", "Status"))
+cat(sprintf("%-30s %-10s %s\n", "----", "------", "------"))
+cat(sprintf("%-30s %-10s %s\n", "Shapiro-Wilk (normality)",
+    round(shapiro_result$p.value, 4),
+    ifelse(shapiro_result$p.value > 0.05, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "KS Test (normality)",
+    round(ks_result$p.value, 4),
+    ifelse(ks_result$p.value > 0.05, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "Breusch-Pagan (homosced.)",
+    round(bp_result$p.value, 4),
+    ifelse(bp_result$p.value > 0.05, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "Durbin-Watson (independence)",
+    round(dw_result$statistic, 4),
+    ifelse(dw_result$statistic > 1.5 & dw_result$statistic < 2.5, "PASSED", "CHECK")))
+cat(sprintf("%-30s %-10s %s\n", "VIF max (multicollinearity)",
+    round(max(vif_vals), 4),
+    ifelse(max(vif_vals) < 10, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "Influential points (Cook's D)",
+    length(influential),
+    ifelse(length(influential) / n < 0.05, "ACCEPTABLE", "REVIEW")))
+cat("============================================================\n")
 ```
 
