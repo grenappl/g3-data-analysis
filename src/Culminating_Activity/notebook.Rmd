@@ -29,7 +29,8 @@ select <- dplyr::select
 ```
 
 ```{r load_data}
-data <- read.csv("./src/Culminating_Activity/developer_survey.csv")
+# data <- read.csv("developer_survey.csv")
+data <- read.csv("developer_survey.csv")
 head(data)
 ```
 
@@ -172,6 +173,24 @@ if (nrow(remaining_na) == 0) {
   cat("WARNING: Missing values still present:\n")
   print(remaining_na)
 }
+
+summary(data_clean)
+```
+
+```{r}
+library(knitr)
+library(kableExtra)
+
+summary_df <- data.frame(
+  Variable = c("Age", "Annual Salary", "Years Experience"),
+  Summary = c(
+    "Min=18, Median=31, Mean=31.3, Max=60",
+    "Min=2000, Median=38000, Mean=58625, Max=368700",
+    "Min=0, Median=8, Mean=9.39, Max=41"
+  )
+)
+
+kable(summary_df)
 ```
 
 # Exploratory Data Analysis
@@ -189,7 +208,36 @@ num_cols <- data_clean %>%
 cor(num_cols, use = "complete.obs") %>%
   as.data.frame() %>%
   dplyr::select(log_salary) %>%
-  arrange(desc(abs(log_salary)))
+  dplyr::arrange(desc(abs(log_salary)))
+```
+
+```{r}
+ggplot(data_clean, aes(x = reorder(role, log_salary, median), y = log_salary)) +
+  geom_boxplot(fill = "steelblue", alpha = 0.7) +
+  coord_flip() +
+  labs(title = "Log Salary by Role", x = "Role", y = "Log Salary") +
+  theme_minimal()
+
+```
+
+```{r}
+ggplot(data_clean, aes(x = years_of_experience, y = log_salary)) +
+  geom_point(alpha = 0.2, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Log Salary vs. Years of Experience",
+   	x = "Years of Experience", y = "Log Salary") +
+  theme_minimal()
+
+```
+
+```{r}
+ggplot(data_clean, aes(x = employment_status, y = log_salary, fill = employment_status)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Log Salary by Employment Status",
+   	x = "Employment Status", y = "Log Salary") +
+  theme_minimal() + theme(legend.position = "none")
+
+
 ```
 
 # Model Fitting
