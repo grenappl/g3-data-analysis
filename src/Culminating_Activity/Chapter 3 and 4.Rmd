@@ -68,14 +68,14 @@ The dataset used in this study was sourced from Kaggle, a publicly accessible pl
 The dataset was loaded into R using the following command:
 
 
-```{r load_data}
+```{r load_data, echo=FALSE}
 data <- read.csv("developer_survey.csv")
 head(data)
 ```
 
 An initial inspection confirmed that only one column, `ai_tools_used`, contained missing values (approximately 19.8% of rows). All other columns were complete prior to imputation. The `ai_tools_used` column was excluded from the model as it is a semicolon-delimited multi-value free-text field not directly suitable for regression encoding.
 
-```{r missing_summary}
+```{r missing_summary, echo=FALSE}
 missing_summary <- data %>%
   summarise(across(everything(), ~ sum(is.na(.)))) %>%
   pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
@@ -692,37 +692,105 @@ cat(sprintf("%-30s %-10s %s\n", "Influential points (Cook's D)",
 cat("============================================================\n")
 ```
 
+The diagnostic results are largely favorable for the final model. The Shapiro-Wilk test flagged a normality violation, but with over 11,000 observations this test becomes hypersensitive to even the smallest deviations — the KS test passed and the residuals are visually normal, so this is not a real concern. Homoscedasticity and error independence both passed cleanly via the Breusch-Pagan and Durbin-Watson tests respectively. The VIF showed a technical violation driven by the large number of country and role categories rather than actual problematic collinearity — when adjusted for degrees of freedom, all values are well within acceptable range. Lastly, while 609 influential points were flagged by Cook's Distance, their actual influence values are extremely small, meaning no single observation is meaningfully distorting the model. In short, the model holds up well under scrutiny and its results can be interpreted with confidence.
+
 ## 4.5 Discussion
 
 ### 4.5.1 Model Performance
 
-The final regression model demonstrated strong explanatory power, with an Adjusted R$^2$ of **0.9218**, indicating that approximately 92.18% of the variance in log-transformed developer salary is explained by the included predictors. This is a notably high value for cross-sectional observational data, suggesting that the chosen variables collectively capture the dominant structural factors driving developer compensation.
-
-The stark contrast between the full model (Adj. R$^2$ = 0.9218) and the Manual v2 baseline (Adj. R$^2$ = 0.3497) demonstrates the substantial explanatory contribution of the additional predictors --- particularly `country`, `company_size`, and `work_mode` --- introduced in subsequent model specifications. The near-identical Adjusted R$^2$ values across the top eight models suggest that once the key structural predictors are included, further refinement through variable selection yields diminishing returns in explanatory power.
+The final regression model demonstrated strong explanatory power, with an Adjusted R$^2$ of
+0.9218, indicating that approximately 92.18% of the variance in log-transformed developer
+salary is explained by the included predictors. This is a notably high value for cross-sectional
+observational data, suggesting that the chosen variables collectively capture the dominant
+structural factors driving developer compensation. The overall F-statistic of 1,324 on 102
+and 11,342 degrees of freedom (p < 2.2e-16) confirms that the model as a whole is highly
+statistically significant. The stark contrast between the full model (Adj. R$^2$ = 0.9218) and
+the Manual v2 baseline (Adj. R$^2$ = 0.3497) highlights the enormous explanatory contribution
+of `country`, which alone accounts for the bulk of the improvement once added to the model.
 
 ### 4.5.2 Significant Predictors
 
-Based on the Model 1 (model_v2) output, several predictors emerged as statistically significant at the $\alpha$ = 0.05 level:
+Based on the final model output, the following predictors were statistically significant at
+the $\alpha$ = 0.05 level:
 
-- **years_of_experience** ($\beta$ = 0.0372, p < 2e-16): Each additional year of experience is associated with a 3.72% increase in salary, holding all other variables constant. This is the strongest continuous predictor in the model.
-- **employment_status --- Student** ($\beta$ = -1.5146, p < 2e-16) **and Unemployed** ($\beta$ = -1.6170, p < 2e-16): Both statuses are associated with substantially lower salaries relative to the reference category, expected given the structural difference between employment categories.
-- **role**: Several roles were significant. DevOps/SRE (+15.0%), Engineering Manager (+16.1%), and Machine Learning Engineer (+13.3%) commanded salary premiums above the reference role. Conversely, QA/Test Engineer (-22.0%), Game Developer (-19.4%), and Front-End Developer (-14.2%) were associated with salary penalties.
-- **education_level** (linear component, $\beta$ = 0.2513, p = 2.30e-09): The linear trend in education level was significant, indicating that higher educational attainment is positively associated with salary. Higher-order polynomial terms were not significant, suggesting a predominantly linear relationship.
+**Experience and Age.** Years of experience ($\beta$ = 0.0364, p < 2e-16) remains the
+strongest continuous predictor --- each additional year is associated with approximately a
+3.64% increase in salary. Age ($\beta$ = 0.0052, p < 2e-16) also emerged as significant
+in the full model, contributing independently of experience, suggesting that seniority and
+career stage carry separate salary signals.
 
-Notably, `coding_hours_per_week` (p = 0.317) and `age` (p = 0.059) were not statistically significant in Model 1, consistent with the decision in Model 3 to remove `coding_hours_per_week` from subsequent specifications.
+**Employment Status.** Student ($\beta$ = -1.5858, p < 2e-16) and Unemployed ($\beta$ =
+-1.5988, p < 2e-16) statuses are associated with dramatically lower log salaries relative
+to the Freelance baseline roughly a 79% salary reduction which is structurally
+expected. Full-time and Part-time statuses were not significantly different from Freelance
+(p > 0.45), indicating compensation parity among active employment types.
 
-> **Note:** Once the full model (model_full) summary output is available, this section should be expanded to include the significant effects of `country`, `company_size`, `work_mode`, and other predictors introduced in the full specification.
+**Role.** Several roles were highly significant. Engineering Manager ($\beta$ = 0.1996,
+p < 2e-16) and Machine Learning Engineer ($\beta$ = 0.1395, p < 2e-16) commanded the
+largest salary premiums, followed by Security Engineer, Cloud Engineer, DevOps/SRE, and
+Data Engineer. On the other end, Student/Intern ($\beta$ = -1.3699, p < 2e-16), QA/Test
+Engineer ($\beta$ = -0.2356, p < 2e-16), and Game Developer ($\beta$ = -0.1547,
+p < 2e-16) were associated with the largest salary penalties relative to the Back-End
+Developer baseline.
+
+**Education Level.** The linear component of education level ($\beta$ = 0.3024, p < 2e-16)
+was strongly significant, confirming that higher educational attainment is positively
+associated with salary. Higher-order polynomial terms remained non-significant, indicating
+the relationship is predominantly linear.
+
+**Country.** Country was by far the most impactful categorical predictor. Switzerland
+($\beta$ = 1.987), United States ($\beta$ = 2.077), Australia ($\beta$ = 1.748), Canada
+($\beta$ = 1.666), and Israel ($\beta$ = 1.645) carried the largest positive salary premiums
+relative to the reference country, while Bangladesh ($\beta$ = -0.594), Pakistan
+($\beta$ = -0.396), and Ghana ($\beta$ = -0.412) were associated with significantly lower
+salaries. The vast majority of country coefficients were highly significant (p < 2e-16),
+underscoring geography as a dominant driver of developer compensation.
+
+**Coding Hours Per Week.** Interestingly, coding hours per week ($\beta$ = -0.0008,
+p = 0.014) was negatively associated with salary in the full model, suggesting that
+higher-earning developers tend to code fewer hours likely because senior and managerial
+roles involve more non-coding responsibilities.
+
+**Gender.** Among gender categories, only "Prefer not to say" ($\beta$ = 0.0427, p = 0.028)
+showed a marginally significant positive association. The Woman and Non-binary categories
+were not significantly different from the Man baseline, though the small effect sizes
+warrant cautious interpretation.
+
+**Non-significant Predictors.** Company size, work mode, primary OS, AI productivity boost
+percentage, AI usage frequency, burnout frequency, remote work preference, and open source
+contributor status were all non-significant in the full model, suggesting these factors do
+not independently predict salary once role, experience, education, employment status, and
+country are accounted for.
 
 ### 4.5.3 Diagnostic Interpretation
 
-> **Note:** Complete this section once the diagnostic test outputs (Shapiro-Wilk, Breusch-Pagan, Durbin-Watson, VIF, Cook's Distance) are available from running the code above.
+The diagnostic results are largely favorable for the final model. The Shapiro-Wilk test
+flagged a normality violation, but with over 11,000 observations this test becomes
+hypersensitive to even the smallest deviations the KS test passed and the residuals
+are visually normal, so this is not a real concern. Homoscedasticity and error independence
+both passed cleanly via the Breusch-Pagan and Durbin-Watson tests respectively. The VIF
+showed a technical violation driven by the large number of `country` and `role` categories
+rather than actual problematic collinearity when adjusted for degrees of freedom, all
+values are well within acceptable range. Lastly, while 609 influential points were flagged
+by Cook's Distance, their actual influence values are extremely small, meaning no single
+observation is meaningfully distorting the model. In short, the model holds up well under
+scrutiny and its results can be interpreted with confidence.
 
 ### 4.5.4 Limitations
 
-Several limitations of this analysis should be acknowledged. First, the dataset is synthetically generated rather than collected from real developer surveys, which means the patterns and relationships embedded in the data may not perfectly reflect real-world salary structures across all countries and roles. Second, the cross-sectional nature of the data precludes causal inference --- associations identified in the model do not imply that changing a predictor (such as switching roles) would produce the estimated salary change for a given individual. Third, the high number of predictor levels in `country` and `role` results in a large number of dummy coefficients, some of which may be imprecisely estimated due to sparse representation of certain categories.
-
-Despite these limitations, the model provides a statistically robust and practically interpretable framework for understanding the factors associated with developer compensation.
-
----
+Several limitations of this analysis should be acknowledged. First, the dataset is
+synthetically generated rather than collected from real developer surveys, which means the
+patterns and relationships embedded in the data may not perfectly reflect real-world salary
+structures across all countries and roles. Second, the cross-sectional nature of the data
+precludes causal inference --- associations identified in the model do not imply that
+changing a predictor such as switching roles would produce the estimated salary change for
+a given individual. Third, the high number of predictor levels in `country` and `role`
+results in a large number of dummy coefficients, some of which may be imprecisely estimated
+due to sparse representation of certain categories. Despite these limitations, the model
+provides a statistically robust and practically interpretable framework for understanding
+the factors associated with developer compensation. Overall, the multiple linear regression
+analysis yielded a highly explanatory model of developer salary, with years of experience,
+employment status, role, education level, and country emerging as the most influential
+predictors.
 
 Overall, The multiple linear regression analysis yielded a highly explanatory model of developer salary, with years of experience, employment status, role, education level, and country emerging as the most influential predictors. The model selection process confirmed that a parsimonious set of theoretically grounded predictors is sufficient to achieve near-maximum explanatory power, with the Stepwise AIC model offering the best balance of fit and complexity under the AIC criterion.
