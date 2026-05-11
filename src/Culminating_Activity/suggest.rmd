@@ -1,0 +1,144 @@
+---
+title: "CG3CG3"
+author: 
+- de Pedro, Joenell Conrad
+- Florentino, Ian Miguel
+- Nacu, Drixyl Reece
+- Ruelan, Ivan Paul
+- Seno, Matthew Anakin
+date: "CG3CG3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(car)
+library(tidyverse)
+library(cluster)
+library(ggplot2)
+library(janitor)
+```
+
+```{r}
+data <- read.csv("developer_survey.csv")
+head(data)
+```
+
+# Load and Inspect Data
+Apparently you don't have to convert categorical into numerical 
+values in R, it just automatically labels them with the as.factor function
+
+```{r}
+sum(is.na(data$ai_tools_used))
+head(data)
+print("GLIMPSE")
+glimpse(data)
+print("SUMMARY")
+summary(data)
+```
+
+# Feature Engineering
+```{r}
+
+# --- Stack breadth (simple numeric features) ---
+data <- data %>%
+  mutate(
+    n_languages  = str_count(languages_used,  ";") + 1,
+    n_frameworks = str_count(frameworks_used, ";") + 1
+  )
+
+
+top_languages <- data %>%
+  pull(languages_used) %>%
+  str_split(";") %>%
+  unlist() %>%
+  str_trim() %>%
+  table() %>%
+  sort(decreasing = TRUE) %>%
+  head(10) %>%
+  names()
+
+cat("Top 10 languages:\n")
+print(top_languages)
+
+for (lang in top_languages) {
+  col_name <- paste0("lang_", janitor::make_clean_names(lang))
+  data[[col_name]] <- as.integer(str_detect(data$languages_used, fixed(lang)))
+}
+```
+
+# Preprocessing Data
+```{r}
+
+data_model <- data %>%
+  filter(annual_salary_usd > 0) %>%           # Remove unreported/zero salaries
+  mutate(
+    log_salary = log(annual_salary_usd),       # Log-transform right-skewed target
+
+    role    = factor(role),
+    country = factor(country),
+
+    # Ordered factor — preserves ordinal info in linear model
+    experience_group = cut(years_of_experience,
+                           breaks = c(-1, 1, 3, 7, 15, Inf),
+                           labels = c("0-1", "2-3", "4-7", "8-15", "15+"))
+  ) %>%
+  select(
+    log_salary, annual_salary_usd,
+    role, years_of_experience, country,
+    n_languages, n_frameworks,
+    starts_with("lang_")
+  ) %>%
+  drop_na()
+
+cat("Rows ready for modeling:", nrow(data_model), "\n")
+glimpse(data_model)
+
+```
+
+# Model Fitting
+```{r}
+model <- lm(
+  log_salary ~
+    role +
+    years_of_experience +
+    country +
+    n_languages +
+    n_frameworks +
+    lang_java_script +
+    lang_python +
+    lang_type_script +
+    lang_sql +
+    lang_java +
+    lang_c +
+    lang_html_css +
+    lang_bash_shell,    
+  data = data_model
+)
+```
+
+# Model Summary
+```{r}
+summary(model)   # R², Adjusted R², p-values, t-stats per predictor
+
+anova(model)     # F-tests — significance of each predictor GROUP
+
+# Clean table: significant predictors only (p < 0.05)
+tidy(model) %>%
+  arrange(p.value) %>%
+  mutate(significant = p.value < 0.05) %>%
+  print(n = 60)
+
+# Overall model fit
+glance(model)
+```
+
+# Model Diagnostics
+```{r}
+par(mfrow = c(2, 2))
+plot(model)
+```

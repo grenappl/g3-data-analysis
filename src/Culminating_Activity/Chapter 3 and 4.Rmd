@@ -1,0 +1,796 @@
+---
+title: "CG3CG3 --- Chapters 3 & 4"
+author:
+  - "de Pedro, Joenell Conrad"
+  - "Florentino, Ian Miguel"
+  - "Nacu, Drixyl Reece"
+  - "Ruelan, Ivan Paul"
+  - "Seno, Matthew Anakin"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: false
+    latex_engine: xelatex
+    keep_tex: false
+geometry: margin=1in
+fontsize: 12pt
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \usepackage{hyperref}
+  - \hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+  - \renewcommand{\arraystretch}{1.3}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r libraries, message=FALSE, include=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(cluster)
+library(car)
+library(broom)
+library(MASS)
+library(leaps)
+library(lmtest)
+
+# Pin select to dplyr --- prevents MASS from masking it
+select <- dplyr::select
+```
+
+# CHAPTER 3: METHODOLOGY
+
+## 3.1 Research Design
+
+This study adopts a quantitative, non-experimental research design using secondary data obtained from the Kaggle Developer Survey dataset. The research is descriptive and predictive in nature, aiming to identify factors that significantly influence developer compensation and to construct a reliable predictive model for annual salary.
+
+The analytical approach is grounded in multiple linear regression, a classical statistical method suited for estimating the linear relationship between a continuous dependent variable and multiple independent predictors. Because the data are observational rather than experimentally controlled, the study focuses on identifying statistically significant associations rather than making causal claims.
+
+Model validity is assessed through a comprehensive suite of diagnostic tests covering the core OLS assumptions: normality of residuals, homoscedasticity, independence of errors, and absence of severe multicollinearity. Multiple model specifications are compared using Adjusted R$^2$, AIC, and BIC to arrive at the most parsimonious and well-fitting final model.
+
+
+## 3.2 Data Collection
+
+The dataset used in this study was sourced from Kaggle, a publicly accessible platform for open datasets widely used in academic and data science research. The dataset is a **synthetically generated** developer survey containing 12,000 records and 32 variables designed to simulate realistic developer demographics, compensation, and technology adoption patterns.
+
+**Dataset Source:** <https://www.kaggle.com/datasets/meruvakodandasuraj/developer-survey-2026-skills-salary-and-ai-impact>
+
+The dataset was loaded into R using the following command:
+
+
+```{r load_data, echo=FALSE}
+data <- read.csv("developer_survey.csv")
+head(data)
+```
+
+An initial inspection confirmed that only one column, `ai_tools_used`, contained missing values (approximately 19.8% of rows). All other columns were complete prior to imputation. The `ai_tools_used` column was excluded from the model as it is a semicolon-delimited multi-value free-text field not directly suitable for regression encoding.
+
+```{r missing_summary, echo=FALSE}
+missing_summary <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  mutate(pct_missing = round(n_missing / nrow(data) * 100, 1)) %>%
+  filter(n_missing > 0) %>%
+  arrange(desc(pct_missing))
+
+print(missing_summary)
+```
+
+
+## 3.3 Variables Description
+
+The study models annual developer salary as the dependent variable, with a comprehensive set of demographic, employment, educational, and behavioral predictors serving as independent variables.
+
+### 3.3.1 Dependent Variable
+
+The dependent variable is `log_salary`, defined as the natural logarithm of `annual_salary_usd`. A log transformation was applied because raw salary distributions are strongly right-skewed; the transformation stabilizes variance across fitted values and brings the distribution closer to normality, both of which are assumptions of OLS regression. Respondents with `annual_salary_usd $\leq$ 0` were excluded from the analysis as these entries reflect unemployed or unreported salary statuses rather than true compensation values.
+
+### 3.3.2 Independent Variables
+
+The independent variables include all numeric, ordinal, and nominal features available in the cleaned dataset after excluding ID columns, multi-value text fields, and the target variable. Table 3.1 presents the full set of predictors, their measurement type, and how each was encoded for regression.
+
+| Variable | Type | Encoding / Notes |
+|---|---|---|
+| years_of_experience | Continuous numeric | Raw numeric; direct linear predictor of salary |
+| age | Continuous numeric | Raw numeric |
+| coding_hours_per_week | Continuous numeric | Raw numeric |
+| ai_productivity_boost_pct | Continuous numeric | Raw numeric; self-reported % boost from AI tools |
+| remote_work_preference_1to5 | Ordinal numeric | Raw numeric (1 = fully on-site, 5 = fully remote) |
+| open_source_contributor | Binary numeric | Raw numeric (0/1) |
+| education_level | Ordered factor | 7-level ordered factor from High school to Doctorate (PhD) |
+| company_size | Ordered factor | 7-level ordered factor from 1--10 to 10000+ employees |
+| burnout_frequency | Ordered factor | 5-level ordered factor: Never to Always |
+| ai_usage_frequency | Ordered factor | 6-level ordered factor: Never to Multiple times daily |
+| role | Nominal factor | Unordered; each level gets a dummy coefficient vs. baseline |
+| employment_status | Nominal factor | Unordered; e.g., Full-time, Part-time, Freelance |
+| work_mode | Nominal factor | Unordered; e.g., Remote, Hybrid, In-Office |
+| gender | Nominal factor | Unordered |
+| primary_os | Nominal factor | Unordered; e.g., Windows, macOS, Linux |
+| ai_sentiment | Nominal factor | Unordered; attitude toward AI in the workplace |
+| ai_job_threat_perception | Nominal factor | Unordered; perceived job threat level from AI |
+| primary_learning_source | Nominal factor | Unordered; e.g., Official docs, Stack Overflow, YouTube |
+| looking_for_job | Nominal factor | Unordered; current job-seeking status |
+| country | Nominal factor | Unordered; country of employment |
+
+*Table 3.1. Independent Variables Used in the Multiple Linear Regression Model*
+
+## 3.4 Data Analysis Techniques
+
+### 3.4.1 Descriptive Statistics
+
+Exploratory data analysis was conducted prior to modeling to understand variable distributions and guide preprocessing decisions. Specific procedures included:
+
+- Histograms of raw and log-transformed salary to justify the log transformation
+- Pearson correlation matrix of all numeric predictors against `log_salary` to screen for linear relationships
+- Summary statistics (mean, median, standard deviation, quartiles) via `summary()` in R
+- Frequency tables for categorical variables to detect dominant categories and inform mode imputation
+- Missing value audit to quantify and locate all NA entries before imputation
+
+Numeric variables with missing values were imputed using the column median, and categorical variables were imputed using the column mode, both strategies chosen to preserve distributional properties without introducing bias from mean substitution in skewed data.
+
+### 3.4.2 Inferential Statistics
+
+The primary analytical method is multiple linear regression (MLR) estimated by Ordinary Least Squares (OLS), implemented using the `lm()` function in R. The regression equation takes the general form:
+
+$$\log(\text{salary}) = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_k X_k + \varepsilon$$
+
+where $X_1$ through $X_k$ represent the independent variables listed in Table 3.1, $\beta_0$ is the intercept, $\beta_1 \ldots \beta_k$ are regression coefficients, and $\varepsilon$ is the error term. All hypothesis tests are conducted at the $\alpha = 0.05$ significance level.
+
+**Significance Testing**
+
+- Individual predictor significance was assessed via t-tests on each regression coefficient, with p-values reported from `summary(model)`
+- Overall predictor group significance was assessed via F-tests using `anova(model)`
+- Predictors were classified as significant (p < 0.05) or non-significant (p $\geq$ 0.05) and ranked accordingly
+
+**Variable Selection**
+
+To identify the most parsimonious model, several variable selection strategies were applied and compared:
+
+- Manual stepwise elimination by p-value, producing Models v2, v3, and v4 by progressively removing non-significant predictors
+- Backward elimination using `drop1()` with F-tests to identify the weakest contributor at each step
+- Bidirectional stepwise AIC selection using `stepAIC(direction = "both")` from the MASS package
+- Stepwise BIC selection using `stepAIC()` with `k = log(n)` to apply a stronger complexity penalty
+- A theory-driven reduced model retaining only substantively meaningful predictors
+
+All candidate models were evaluated and ranked on Adjusted R$^2$, AIC, and BIC. The full model was retained as the final model based on this comparison.
+
+**Model Assumption Diagnostics**
+
+The following formal tests and visual diagnostics were applied to the final model to validate the OLS assumptions:
+
+| Assumption | Test / Method | Tool in R |
+|---|---|---|
+| Normality of residuals | Shapiro-Wilk test; Kolmogorov-Smirnov test; Q-Q plot; residual histogram | `shapiro.test()`, `ks.test()`, `qqnorm()` |
+| Homoscedasticity | Breusch-Pagan test; Residuals vs. Fitted plot; Scale-Location plot | `bptest()` from lmtest |
+| Independence of errors | Durbin-Watson test (acceptable range: 1.5 -- 2.5) | `dwtest()` from lmtest |
+| Multicollinearity | Variance Inflation Factor (VIF); flag VIF > 5 (moderate) and VIF > 10 (severe) | `vif()` from car |
+| Influential observations | Cook's Distance with threshold 4/n; Leverage (hat values) with threshold 2p/n | `cooks.distance()`, `hatvalues()` |
+
+*Table 3.2. OLS Assumption Diagnostics Applied to the Final Model*
+
+In summary, this chapter described a rigorous multiple linear regression pipeline implemented in R, covering data sourcing from Kaggle, preprocessing and imputation, variable operationalization, model fitting, variable selection across multiple strategies, and a comprehensive set of assumption diagnostics. The combination of formal statistical tests and visual diagnostics ensures that the final model is both statistically valid and interpretable.
+
+# CHAPTER 4: RESULTS AND DISCUSSION
+
+This chapter presents the results of the multiple linear regression analysis conducted on the Developer Survey 2026 dataset. The findings are organized into four sections: descriptive statistics summarizing the dataset, visualizations of key variable distributions and relationships, model outputs from all candidate regression specifications, and a discussion interpreting the significant predictors and diagnostic results.
+
+## 4.1 Descriptive Statistics
+
+Descriptive statistics were computed on the cleaned dataset (`data_clean`) using the `summary()` function in R. After removing rows with zero or missing salary values, the final dataset consisted of 11,445 observations across all retained variables.
+
+```{r data_clean, include=FALSE}
+data_clean <- data %>%
+
+  dplyr::select(-respondent_id, -languages_used, -frameworks_used,
+                -databases_used, -cloud_platforms_used, -ide_editor,
+                -want_to_learn_next, -ai_tools_used) %>%
+
+  mutate(
+    years_of_experience         = ifelse(is.na(years_of_experience),
+                                    median(years_of_experience, na.rm = TRUE),
+                                    years_of_experience),
+    age                         = ifelse(is.na(age),
+                                    median(age, na.rm = TRUE), age),
+    coding_hours_per_week       = ifelse(is.na(coding_hours_per_week),
+                                    median(coding_hours_per_week, na.rm = TRUE),
+                                    coding_hours_per_week),
+    ai_productivity_boost_pct   = ifelse(is.na(ai_productivity_boost_pct),
+                                    median(ai_productivity_boost_pct, na.rm = TRUE),
+                                    ai_productivity_boost_pct),
+    remote_work_preference_1to5 = ifelse(is.na(remote_work_preference_1to5),
+                                    median(remote_work_preference_1to5, na.rm = TRUE),
+                                    remote_work_preference_1to5)
+  ) %>%
+
+  mutate(
+    across(
+      c(gender, role, employment_status, work_mode, primary_os,
+        ai_sentiment, ai_job_threat_perception, primary_learning_source,
+        looking_for_job, country, open_source_contributor),
+      ~ {
+        mode_val <- names(sort(table(.), decreasing = TRUE))[1]
+        ifelse(is.na(.), mode_val, .)
+      }
+    )
+  ) %>%
+
+  mutate(
+    education_level = {
+      mode_val <- names(sort(table(education_level), decreasing = TRUE))[1]
+      ifelse(is.na(education_level), mode_val, education_level)
+    },
+    company_size = {
+      mode_val <- names(sort(table(company_size), decreasing = TRUE))[1]
+      ifelse(is.na(company_size), mode_val, company_size)
+    },
+    burnout_frequency = {
+      mode_val <- names(sort(table(burnout_frequency), decreasing = TRUE))[1]
+      ifelse(is.na(burnout_frequency), mode_val, burnout_frequency)
+    },
+    ai_usage_frequency = {
+      mode_val <- names(sort(table(ai_usage_frequency), decreasing = TRUE))[1]
+      ifelse(is.na(ai_usage_frequency), mode_val, ai_usage_frequency)
+    }
+  ) %>%
+
+  mutate(
+    education_level = factor(education_level,
+      levels = c("High school", "Some college", "Associate degree",
+                 "Self-taught / Bootcamp", "Bachelor's degree",
+                 "Master's degree", "Doctorate (PhD)"),
+      ordered = TRUE),
+
+    company_size = factor(company_size,
+      levels = c("1-10", "11-50", "51-200", "201-1000",
+                 "1001-5000", "5001-10000", "10000+"),
+      ordered = TRUE),
+
+    burnout_frequency = factor(burnout_frequency,
+      levels = c("Never", "Rarely", "Sometimes", "Often", "Always"),
+      ordered = TRUE),
+
+    ai_usage_frequency = factor(ai_usage_frequency,
+      levels = c("Never", "Rarely", "Monthly", "Weekly",
+                 "Daily", "Multiple times daily"),
+      ordered = TRUE),
+
+    gender                   = factor(gender),
+    role                     = factor(role),
+    employment_status        = factor(employment_status),
+    work_mode                = factor(work_mode),
+    primary_os               = factor(primary_os),
+    ai_sentiment             = factor(ai_sentiment),
+    ai_job_threat_perception = factor(ai_job_threat_perception),
+    primary_learning_source  = factor(primary_learning_source),
+    looking_for_job          = factor(looking_for_job),
+    country                  = factor(country)
+  ) %>%
+
+  filter(!is.na(annual_salary_usd), annual_salary_usd > 0) %>%
+  mutate(log_salary = log(annual_salary_usd))
+
+cat("Rows after cleaning:", nrow(data_clean), "\n")
+```
+
+```{r verify_clean, include=FALSE}
+remaining_na <- data_clean %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  filter(n_missing > 0)
+
+if (nrow(remaining_na) == 0) {
+  cat("No missing values remaining.\n")
+} else {
+  cat("WARNING: Missing values still present:\n")
+  print(remaining_na)
+}
+```
+
+```{r descriptive_stats, include=FALSE}
+summary(data_clean)
+```
+
+Table 4.1 presents the descriptive statistics for the continuous variables in the cleaned dataset.
+
+| Variable | Min | Median | Mean | Max |
+|---|---|---|---|---|
+| survey_year | 2020 | 2024 | 2023 | 2026 |
+| age | 18.0 | 31.0 | 31.3 | 60.0 |
+| years_of_experience | 0.000 | 8.000 | 9.389 | 41.000 |
+| coding_hours_per_week | 5.00 | 33.00 | 32.89 | 67.00 |
+| annual_salary_usd | 2,000 | 38,000 | 58,625 | 368,700 |
+| job_satisfaction | 1.000 | 4.000 | 3.602 | 5.000 |
+| career_satisfaction | 1.000 | 4.000 | 3.748 | 5.000 |
+| ai_productivity_boost_pct | 0.00 | 23.00 | 24.46 | 80.00 |
+| open_source_contributor | 0.000 | 0.000 | 0.345 | 1.000 |
+| remote_work_preference_1to5 | 1.000 | 4.000 | 4.056 | 5.000 |
+| log_salary | 7.601 | 10.545 | 10.509 | 12.818 |
+
+*Table 4.1a. Descriptive Statistics --- Continuous Variables*
+
+| Variable | Most Frequent | Count | 2nd Most Frequent | Count |
+|---|---|---|---|---|
+| country | United States | 2,067 | India | 1,611 |
+| gender | Man | 10,025 | Woman | 970 |
+| education_level | Bachelor's degree | 4,878 | Master's degree | 3,194 |
+| role | Full-Stack Developer | 2,564 | Back-End Developer | 1,701 |
+| employment_status | Full-time | 9,325 | Freelance | 1,008 |
+| company_size | 201-1000 | 2,233 | 51-200 | 2,126 |
+| work_mode | Hybrid | 4,597 | Remote | 4,406 |
+| primary_os | Windows | 4,761 | macOS | 3,706 |
+| ai_usage_frequency | Multiple times daily | 3,154 | Daily | 2,868 |
+| ai_sentiment | Somewhat positive | 4,063 | Neutral | 2,553 |
+| ai_job_threat_perception | Minimal threat | 3,410 | Moderate threat | 3,221 |
+| primary_learning_source | Official docs | 2,292 | Stack Overflow | 2,058 |
+| looking_for_job | Open to offers | 4,549 | Not looking | 4,351 |
+| burnout_frequency | Sometimes | 3,999 | Often | 2,906 |
+
+*Table 4.1b. Descriptive Statistics --- Categorical Variables (Top 2 Categories)*
+
+
+
+## 4.2 Visualizations
+
+Visual exploration of the data was conducted using `ggplot2` in R. The following plots were generated to understand the distributions of key variables and their relationships with the log-transformed salary outcome.
+
+### 4.2.1 Salary Distribution
+
+```{r salary_distribution, fig.cap="Figure 4.1. Raw vs. Log-Transformed Salary Distribution"}
+par(mfrow = c(1, 2))
+hist(data_clean$annual_salary_usd, main = "Raw Salary", col = "steelblue",
+     xlab = "Annual Salary (USD)")
+hist(data_clean$log_salary, main = "Log Salary", col = "tomato",
+     xlab = "Log(Annual Salary)")
+par(mfrow = c(1, 1))
+```
+
+The raw salary distribution exhibited strong right skewness, with a long upper tail driven by high-earning roles and senior developers. After applying the natural log transformation, the distribution became approximately symmetric and bell-shaped, confirming that the log transformation was appropriate for meeting the normality assumptions of OLS regression.
+
+### 4.2.2 Log Salary by Role
+
+```{r salary_by_role, fig.width=9, fig.height=6, fig.cap="Figure 4.2. Log Salary by Developer Role"}
+ggplot(data_clean, aes(x = reorder(role, log_salary, median), y = log_salary)) +
+  geom_boxplot(fill = "steelblue", alpha = 0.7) +
+  coord_flip() +
+  labs(title = "Log Salary by Role", x = "Role", y = "Log Salary") +
+  theme_minimal()
+```
+
+Figure 4.2 presents the distribution of log-transformed salary across developer roles. Engineering Manager and DevOps/SRE consistently occupy the highest salary range, with median log salaries approaching 11.0 and above, reflecting strong market demand for infrastructure and leadership roles. Security Engineer and Machine Learning Engineer follow closely, both showing relatively compact interquartile ranges suggesting more consistent compensation within those roles.
+
+Mid-tier roles such as Data Engineer, Data Scientist, Cloud Engineer, and Freelancer/Consultant cluster around a median log salary of approximately 10.5, aligning with the overall dataset median. Back-End, Mobile, Full-Stack, and Front-End Developers occupy a similar range but with wider spreads, indicating greater variability in compensation likely driven by geography, company size, and experience level.
+
+The lowest salary distributions belong to Game Developer, Embedded Developer, QA/Test Engineer, and notably Student/Intern --- the latter showing a distinctly lower median of approximately 8.5 and a compressed range consistent with entry-level or unpaid compensation structures. The clear separation between Student/Intern and all other roles confirms that employment status and role type are among the most influential structural determinants of developer salary, which is further supported by their statistical significance in the regression model.
+
+### 4.2.3 Log Salary by Employment Status
+
+```{r salary_by_employment, fig.cap="Figure 4.3. Log Salary by Employment Status"}
+ggplot(data_clean, aes(x = employment_status, y = log_salary, fill = employment_status)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Log Salary by Employment Status",
+       x = "Employment Status", y = "Log Salary") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+Figure 4.3 displays the distribution of log-transformed salary across the five employment status categories. Freelance, Full-time, and Part-time developers share nearly identical median log salaries of approximately 10.7--10.8, with similarly wide interquartile ranges spanning roughly 10.0 to 11.5, suggesting that compensation levels are broadly comparable across these active employment types. In stark contrast, Student and Unemployed respondents show substantially lower median log salaries of approximately 9.0, with compressed distributions and notably less upward spread, reflecting the structural absence of full professional compensation in these categories. The single outlier visible below the Full-time whisker indicates a small number of full-time developers reporting unusually low salaries. The sharp divide between the three active employment categories and the Student/Unemployed groups reinforces the regression finding that employment status is one of the most statistically significant predictors of developer salary.
+
+### 4.2.4 Log Salary vs. Years of Experience
+
+```{r salary_vs_experience, fig.cap="Figure 4.4. Log Salary vs. Years of Experience"}
+ggplot(data_clean, aes(x = years_of_experience, y = log_salary)) +
+  geom_point(alpha = 0.2, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Log Salary vs. Years of Experience",
+       x = "Years of Experience", y = "Log Salary") +
+  theme_minimal()
+```
+
+Figure 4.4 presents a scatter plot of log-transformed salary against years of professional experience, overlaid with a linear regression trend line in red. The plot reveals a clear and consistent positive relationship between experience and log salary across the full range of 0 to 40 years, with the fitted line rising steadily from approximately 10.0 at entry level to 12.2 at 40 years of experience. The vertical banding visible throughout the plot reflects the discrete integer nature of the years of experience variable. While considerable vertical spread exists at every experience level --- indicating that other factors such as role, country, and education also contribute substantially to salary variation --- the upward trajectory of the trend line confirms that years of experience maintains a strong and consistent positive association with compensation, consistent with its highly significant coefficient in the regression model ($\beta$ = 0.0372, p < 2e-16).
+
+
+## 4.3 Model Results
+
+Six model specifications were estimated and compared. This section presents the outputs of each model in sequence, followed by the formal model comparison table.
+
+### 4.3.1 Variable Selection
+
+### Full Model (model_full)
+
+The full model includes all 16 predictors available in `data_clean`.
+
+```{r model_full}
+model_full <- lm(
+  log_salary ~ years_of_experience + age + coding_hours_per_week +
+    education_level + role + employment_status + company_size +
+    work_mode + gender + primary_os + ai_productivity_boost_pct +
+    ai_usage_frequency + burnout_frequency + remote_work_preference_1to5 +
+    country + open_source_contributor,
+  data = data_clean
+)
+
+summary(model_full)
+AIC(model_full)
+BIC(model_full)
+```
+
+#### Backward Elimination by p-value
+
+```{r vs_backward}
+drop1(model_full, test = "F")
+
+model_backward_pval2 <- update(model_full, . ~ . - gender - primary_os - burnout_frequency)
+summary(model_backward_pval2)
+drop1(model_backward_pval2, test = "F")
+```
+
+#### Stepwise AIC
+
+```{r vs_aic}
+model_step_aic <- stepAIC(model_full, direction = "both", trace = FALSE)
+summary(model_step_aic)
+AIC(model_step_aic)
+BIC(model_step_aic)
+```
+
+#### Stepwise BIC
+
+```{r vs_bic}
+n <- nrow(data_clean)
+model_step_bic <- stepAIC(model_full, direction = "both", k = log(n), trace = FALSE)
+summary(model_step_bic)
+AIC(model_step_bic)
+BIC(model_step_bic)
+```
+
+#### Theory-Driven Reduced Model
+
+```{r vs_theory}
+model_theory <- lm(
+  log_salary ~ years_of_experience + education_level + role +
+    employment_status + company_size + work_mode + country,
+  data = data_clean
+)
+
+summary(model_theory)
+AIC(model_theory)
+BIC(model_theory)
+```
+
+#### VIF Check --- Multicollinearity
+
+```{r vs_vif}
+vif(model_full)
+
+model_no_collinear <- lm(
+  log_salary ~ years_of_experience + coding_hours_per_week +
+    education_level + role + employment_status + company_size +
+    work_mode + gender + primary_os + ai_productivity_boost_pct +
+    ai_usage_frequency + burnout_frequency + remote_work_preference_1to5 +
+    country + open_source_contributor,
+  data = data_clean
+)
+
+vif(model_no_collinear)
+summary(model_no_collinear)
+```
+
+### 4.3.2 Model Comparison
+
+```{r model_comparison}
+models <- list(
+  Full          = model_full,
+  Backward_Pval = model_backward_pval2,
+  Stepwise_AIC  = model_step_aic,
+  Stepwise_BIC  = model_step_bic,
+  Theory_Driven = model_theory,
+  No_Collinear  = model_no_collinear
+)
+
+comparison <- data.frame(
+  Model    = names(models),
+  R2       = sapply(models, function(m) round(summary(m)$r.squared, 4)),
+  Adj_R2   = sapply(models, function(m) round(summary(m)$adj.r.squared, 4)),
+  AIC      = sapply(models, function(m) round(AIC(m), 2)),
+  BIC      = sapply(models, function(m) round(BIC(m), 2)),
+  Num_Vars = sapply(models, function(m) length(coef(m)) - 1)
+)
+
+comparison <- comparison[order(comparison$Adj_R2, decreasing = TRUE), ]
+print(comparison)
+
+cat("\nBest model by Adj R2:", comparison$Model[1], "\n")
+cat("Best model by AIC:   ", comparison$Model[which.min(comparison$AIC)], "\n")
+cat("Best model by BIC:   ", comparison$Model[which.min(comparison$BIC)], "\n")
+```
+
+Based on the comparison table, all competitive models share an identical Adjusted R$^2$ of **0.9218**, indicating that approximately **92.18%** of the variance in log-transformed developer salary is explained by the included predictors. The Stepwise AIC model achieved the lowest AIC (4407.18), while Manual v4 and Stepwise BIC achieved the lowest BIC (4985.08). The full model was retained as the final model for its completeness and interpretability across all available predictors.
+
+### 4.3.3 Final Model
+
+```{r final_model}
+final_model <- model_full
+summary(final_model)
+anova(final_model)
+```
+
+## 4.4 Diagnostic Results
+
+The final model was subjected to a comprehensive battery of assumption diagnostics.
+
+### 4.4.1 Residual Plots
+
+```{r residual_plots, fig.width=9, fig.height=7, fig.cap="Figure 4.5. Diagnostic Plots for the Final Model"}
+par(mfrow = c(2, 2))
+plot(final_model)
+par(mfrow = c(1, 1))
+```
+
+### 4.4.2 Normality of Residuals
+
+```{r normality, fig.width=9, fig.height=4, fig.cap="Figure 4.6. Q-Q Plot and Residual Histogram"}
+par(mfrow = c(1, 2))
+
+qqnorm(residuals(final_model), main = "Normal Q-Q Plot of Residuals")
+qqline(residuals(final_model), col = "red", lwd = 2)
+
+hist(residuals(final_model), breaks = 50, col = "steelblue",
+     main = "Histogram of Residuals", xlab = "Residuals")
+curve(dnorm(x,
+            mean = mean(residuals(final_model)),
+            sd   = sd(residuals(final_model))) * length(residuals(final_model)) *
+        diff(hist(residuals(final_model), breaks = 50, plot = FALSE)$breaks)[1],
+      add = TRUE, col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+
+```{r shapiro_ks}
+set.seed(33)
+resid_sample  <- sample(residuals(final_model), min(5000, length(residuals(final_model))))
+shapiro_result <- shapiro.test(resid_sample)
+print(shapiro_result)
+cat("Shapiro-Wilk: W =", round(shapiro_result$statistic, 4),
+    " | p-value =", shapiro_result$p.value, "\n")
+cat("Normality assumption:", ifelse(shapiro_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
+
+ks_result <- ks.test(residuals(final_model), "pnorm",
+                     mean = mean(residuals(final_model)),
+                     sd   = sd(residuals(final_model)))
+print(ks_result)
+cat("KS Test: D =", round(ks_result$statistic, 4),
+    " | p-value =", ks_result$p.value, "\n")
+cat("Normality assumption:", ifelse(ks_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
+```
+
+### 4.4.3 Homoscedasticity
+
+```{r homoscedasticity, fig.width=9, fig.height=4, fig.cap="Figure 4.7. Residuals vs. Fitted and Scale-Location Plots"}
+par(mfrow = c(1, 2))
+
+plot(fitted(final_model), residuals(final_model),
+     main = "Residuals vs Fitted", xlab = "Fitted Values", ylab = "Residuals",
+     pch = 20, col = rgb(0, 0, 1, 0.3))
+abline(h = 0, col = "red", lwd = 2)
+lines(lowess(fitted(final_model), residuals(final_model)), col = "orange", lwd = 2)
+
+plot(fitted(final_model), sqrt(abs(residuals(final_model))),
+     main = "Scale-Location", xlab = "Fitted Values",
+     ylab = expression(sqrt("|Residuals|")),
+     pch = 20, col = rgb(0, 0, 1, 0.3))
+lines(lowess(fitted(final_model), sqrt(abs(residuals(final_model)))),
+      col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+
+```{r bptest}
+bp_result <- bptest(final_model)
+print(bp_result)
+cat("Breusch-Pagan: BP =", round(bp_result$statistic, 4),
+    " | p-value =", bp_result$p.value, "\n")
+cat("Homoscedasticity assumption:", ifelse(bp_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
+```
+
+### 4.4.4 Independence of Errors
+
+```{r durbin_watson}
+dw_result <- dwtest(final_model)
+print(dw_result)
+cat("Durbin-Watson: DW =", round(dw_result$statistic, 4),
+    " | p-value =", dw_result$p.value, "\n")
+cat("Independence assumption:",
+    ifelse(dw_result$statistic > 1.5 & dw_result$statistic < 2.5,
+           "PASSED", "CHECK --- DW outside 1.5--2.5 range"), "\n\n")
+```
+
+### 4.4.5 Multicollinearity (VIF)
+
+```{r vif_final}
+vif_vals <- vif(final_model)
+print(vif_vals)
+
+cat("\n--- VIF > 5 (moderate concern) ---\n")
+print(vif_vals[vif_vals > 5])
+
+cat("\n--- VIF > 10 (severe concern) ---\n")
+print(vif_vals[vif_vals > 10])
+
+cat("Multicollinearity assumption:",
+    ifelse(all(vif_vals < 10), "PASSED (no VIF > 10)", "VIOLATED"), "\n\n")
+```
+
+### 4.4.6 Influential Observations
+
+```{r cooks_distance, fig.cap="Figure 4.8. Cook's Distance Plot"}
+cooksd    <- cooks.distance(final_model)
+threshold <- 4 / nrow(data_clean)
+
+influential <- which(cooksd > threshold)
+cat("Number of influential points (Cook's D > 4/n):", length(influential), "\n")
+cat("That's", round(length(influential) / nrow(data_clean) * 100, 1), "% of observations\n\n")
+
+plot(cooksd, type = "h",
+     main = "Cook's Distance",
+     ylab = "Cook's Distance", xlab = "Observation Index",
+     col  = ifelse(cooksd > threshold, "red", "steelblue"))
+abline(h = threshold, col = "red", lty = 2)
+legend("topright", legend = paste0("Threshold = 4/n = ", round(threshold, 5)),
+       col = "red", lty = 2)
+
+cat("Top 10 most influential observations:\n")
+print(round(sort(cooksd, decreasing = TRUE)[1:10], 6))
+```
+
+```{r leverage}
+hat_vals      <- hatvalues(final_model)
+p             <- length(coef(final_model))
+n             <- nrow(data_clean)
+lev_threshold <- 2 * p / n
+
+high_leverage <- which(hat_vals > lev_threshold)
+cat("\nHigh leverage points (hat > 2p/n =", round(lev_threshold, 4), "):",
+    length(high_leverage), "\n")
+```
+
+### 4.4.7 Diagnostic Summary
+
+```{r diagnostic_summary}
+cat("\n============================================================\n")
+cat("DIAGNOSTIC SUMMARY\n")
+cat("============================================================\n")
+cat(sprintf("%-30s %-10s %s\n", "Test", "Result", "Status"))
+cat(sprintf("%-30s %-10s %s\n", "----", "------", "------"))
+cat(sprintf("%-30s %-10s %s\n", "Shapiro-Wilk (normality)",
+    round(shapiro_result$p.value, 4),
+    ifelse(shapiro_result$p.value > 0.05, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "KS Test (normality)",
+    round(ks_result$p.value, 4),
+    ifelse(ks_result$p.value > 0.05, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "Breusch-Pagan (homosced.)",
+    round(bp_result$p.value, 4),
+    ifelse(bp_result$p.value > 0.05, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "Durbin-Watson (independence)",
+    round(dw_result$statistic, 4),
+    ifelse(dw_result$statistic > 1.5 & dw_result$statistic < 2.5, "PASSED", "CHECK")))
+cat(sprintf("%-30s %-10s %s\n", "VIF max (multicollinearity)",
+    round(max(vif_vals), 4),
+    ifelse(max(vif_vals) < 10, "PASSED", "VIOLATED")))
+cat(sprintf("%-30s %-10s %s\n", "Influential points (Cook's D)",
+    length(influential),
+    ifelse(length(influential) / n < 0.05, "ACCEPTABLE", "REVIEW")))
+cat("============================================================\n")
+```
+
+The diagnostic results are largely favorable for the final model. The Shapiro-Wilk test flagged a normality violation, but with over 11,000 observations this test becomes hypersensitive to even the smallest deviations — the KS test passed and the residuals are visually normal, so this is not a real concern. Homoscedasticity and error independence both passed cleanly via the Breusch-Pagan and Durbin-Watson tests respectively. The VIF showed a technical violation driven by the large number of country and role categories rather than actual problematic collinearity — when adjusted for degrees of freedom, all values are well within acceptable range. Lastly, while 609 influential points were flagged by Cook's Distance, their actual influence values are extremely small, meaning no single observation is meaningfully distorting the model. In short, the model holds up well under scrutiny and its results can be interpreted with confidence.
+
+## 4.5 Discussion
+
+### 4.5.1 Model Performance
+
+The final regression model demonstrated strong explanatory power, with an Adjusted R$^2$ of
+0.9218, indicating that approximately 92.18% of the variance in log-transformed developer
+salary is explained by the included predictors. This is a notably high value for cross-sectional
+observational data, suggesting that the chosen variables collectively capture the dominant
+structural factors driving developer compensation. The overall F-statistic of 1,324 on 102
+and 11,342 degrees of freedom (p < 2.2e-16) confirms that the model as a whole is highly
+statistically significant. The stark contrast between the full model (Adj. R$^2$ = 0.9218) and
+the Manual v2 baseline (Adj. R$^2$ = 0.3497) highlights the enormous explanatory contribution
+of `country`, which alone accounts for the bulk of the improvement once added to the model.
+
+### 4.5.2 Significant Predictors
+
+Based on the final model output, the following predictors were statistically significant at
+the $\alpha$ = 0.05 level:
+
+**Experience and Age.** Years of experience ($\beta$ = 0.0364, p < 2e-16) remains the
+strongest continuous predictor --- each additional year is associated with approximately a
+3.64% increase in salary. Age ($\beta$ = 0.0052, p < 2e-16) also emerged as significant
+in the full model, contributing independently of experience, suggesting that seniority and
+career stage carry separate salary signals.
+
+**Employment Status.** Student ($\beta$ = -1.5858, p < 2e-16) and Unemployed ($\beta$ =
+-1.5988, p < 2e-16) statuses are associated with dramatically lower log salaries relative
+to the Freelance baseline roughly a 79% salary reduction which is structurally
+expected. Full-time and Part-time statuses were not significantly different from Freelance
+(p > 0.45), indicating compensation parity among active employment types.
+
+**Role.** Several roles were highly significant. Engineering Manager ($\beta$ = 0.1996,
+p < 2e-16) and Machine Learning Engineer ($\beta$ = 0.1395, p < 2e-16) commanded the
+largest salary premiums, followed by Security Engineer, Cloud Engineer, DevOps/SRE, and
+Data Engineer. On the other end, Student/Intern ($\beta$ = -1.3699, p < 2e-16), QA/Test
+Engineer ($\beta$ = -0.2356, p < 2e-16), and Game Developer ($\beta$ = -0.1547,
+p < 2e-16) were associated with the largest salary penalties relative to the Back-End
+Developer baseline.
+
+**Education Level.** The linear component of education level ($\beta$ = 0.3024, p < 2e-16)
+was strongly significant, confirming that higher educational attainment is positively
+associated with salary. Higher-order polynomial terms remained non-significant, indicating
+the relationship is predominantly linear.
+
+**Country.** Country was by far the most impactful categorical predictor. Switzerland
+($\beta$ = 1.987), United States ($\beta$ = 2.077), Australia ($\beta$ = 1.748), Canada
+($\beta$ = 1.666), and Israel ($\beta$ = 1.645) carried the largest positive salary premiums
+relative to the reference country, while Bangladesh ($\beta$ = -0.594), Pakistan
+($\beta$ = -0.396), and Ghana ($\beta$ = -0.412) were associated with significantly lower
+salaries. The vast majority of country coefficients were highly significant (p < 2e-16),
+underscoring geography as a dominant driver of developer compensation.
+
+**Coding Hours Per Week.** Interestingly, coding hours per week ($\beta$ = -0.0008,
+p = 0.014) was negatively associated with salary in the full model, suggesting that
+higher-earning developers tend to code fewer hours likely because senior and managerial
+roles involve more non-coding responsibilities.
+
+**Gender.** Among gender categories, only "Prefer not to say" ($\beta$ = 0.0427, p = 0.028)
+showed a marginally significant positive association. The Woman and Non-binary categories
+were not significantly different from the Man baseline, though the small effect sizes
+warrant cautious interpretation.
+
+**Non-significant Predictors.** Company size, work mode, primary OS, AI productivity boost
+percentage, AI usage frequency, burnout frequency, remote work preference, and open source
+contributor status were all non-significant in the full model, suggesting these factors do
+not independently predict salary once role, experience, education, employment status, and
+country are accounted for.
+
+### 4.5.3 Diagnostic Interpretation
+
+The diagnostic results are largely favorable for the final model. The Shapiro-Wilk test
+flagged a normality violation, but with over 11,000 observations this test becomes
+hypersensitive to even the smallest deviations the KS test passed and the residuals
+are visually normal, so this is not a real concern. Homoscedasticity and error independence
+both passed cleanly via the Breusch-Pagan and Durbin-Watson tests respectively. The VIF
+showed a technical violation driven by the large number of `country` and `role` categories
+rather than actual problematic collinearity when adjusted for degrees of freedom, all
+values are well within acceptable range. Lastly, while 609 influential points were flagged
+by Cook's Distance, their actual influence values are extremely small, meaning no single
+observation is meaningfully distorting the model. In short, the model holds up well under
+scrutiny and its results can be interpreted with confidence.
+
+### 4.5.4 Limitations
+
+Several limitations of this analysis should be acknowledged. First, the dataset is
+synthetically generated rather than collected from real developer surveys, which means the
+patterns and relationships embedded in the data may not perfectly reflect real-world salary
+structures across all countries and roles. Second, the cross-sectional nature of the data
+precludes causal inference --- associations identified in the model do not imply that
+changing a predictor such as switching roles would produce the estimated salary change for
+a given individual. Third, the high number of predictor levels in `country` and `role`
+results in a large number of dummy coefficients, some of which may be imprecisely estimated
+due to sparse representation of certain categories. Despite these limitations, the model
+provides a statistically robust and practically interpretable framework for understanding
+the factors associated with developer compensation. Overall, the multiple linear regression
+analysis yielded a highly explanatory model of developer salary, with years of experience,
+employment status, role, education level, and country emerging as the most influential
+predictors.
+
+Overall, The multiple linear regression analysis yielded a highly explanatory model of developer salary, with years of experience, employment status, role, education level, and country emerging as the most influential predictors. The model selection process confirmed that a parsimonious set of theoretically grounded predictors is sufficient to achieve near-maximum explanatory power, with the Stepwise AIC model offering the best balance of fit and complexity under the AIC criterion.
