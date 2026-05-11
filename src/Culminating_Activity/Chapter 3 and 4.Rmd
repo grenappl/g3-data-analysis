@@ -43,6 +43,7 @@ library(broom)
 library(MASS)
 library(leaps)
 library(lmtest)
+library(kableExtra)
 
 # Pin select to dplyr --- prevents MASS from masking it
 select <- dplyr::select
@@ -70,12 +71,76 @@ The dataset was loaded into R using the following command:
 
 ```{r load_data, echo=FALSE}
 data <- read.csv("developer_survey.csv")
-head(data)
+make_pdf_table <- function(df, title) {
+  df %>%
+    head(15) %>%
+    kbl(
+      caption = title,
+      booktabs = TRUE,
+      longtable = TRUE,
+      linesep = "",
+      align = "c"
+    ) %>%
+    kable_styling(
+      latex_options = c(
+        "striped",
+        "repeat_header",
+        "hold_position",
+        "scale_down"
+      ),
+      font_size = 8,
+      full_width = FALSE
+    ) %>%
+    row_spec(0, bold = TRUE, color = "white", background = "black")
+}
+
+# 1. Demographics
+data %>%
+  select(
+    respondent_id, survey_year, country, age, gender,
+    education_level, years_of_experience, role
+  ) %>%
+  make_pdf_table("Table 1. Developer Demographics")
+
+# 2. Employment Information
+data %>%
+  select(
+    employment_status, company_size, work_mode,
+    coding_hours_per_week, annual_salary_usd,
+    job_satisfaction, career_satisfaction
+  ) %>%
+  make_pdf_table("Table 2. Employment and Salary Information")
+
+# 3. Technology Stack
+data %>%
+  select(
+    primary_os, languages_used, frameworks_used,
+    databases_used, cloud_platforms_used, ide_editor
+  ) %>%
+  make_pdf_table("Table 3. Technology Stack")
+
+# 4. AI Usage
+data %>%
+  select(
+    ai_tools_used, ai_usage_frequency,
+    ai_productivity_boost_pct, ai_sentiment,
+    ai_job_threat_perception
+  ) %>%
+  make_pdf_table("Table 4. AI Usage and Perception")
+
+# 5. Career Development
+data %>%
+  select(
+    primary_learning_source, open_source_contributor,
+    looking_for_job, remote_work_preference_1to5,
+    burnout_frequency, want_to_learn_next
+  ) %>%
+  make_pdf_table("Table 5. Career Growth and Preferences")
 ```
 
 An initial inspection confirmed that only one column, `ai_tools_used`, contained missing values (approximately 19.8% of rows). All other columns were complete prior to imputation. The `ai_tools_used` column was excluded from the model as it is a semicolon-delimited multi-value free-text field not directly suitable for regression encoding.
 
-```{r missing_summary, echo=FALSE}
+```{r missing_summary, include=FALSE}
 missing_summary <- data %>%
   summarise(across(everything(), ~ sum(is.na(.)))) %>%
   pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
@@ -345,7 +410,7 @@ Visual exploration of the data was conducted using `ggplot2` in R. The following
 
 ### 4.2.1 Salary Distribution
 
-```{r salary_distribution, fig.cap="Figure 4.1. Raw vs. Log-Transformed Salary Distribution"}
+```{r salary_distribution, fig.cap="Figure 4.1. Raw vs. Log-Transformed Salary Distribution", echo=FALSE}
 par(mfrow = c(1, 2))
 hist(data_clean$annual_salary_usd, main = "Raw Salary", col = "steelblue",
      xlab = "Annual Salary (USD)")
@@ -358,7 +423,7 @@ The raw salary distribution exhibited strong right skewness, with a long upper t
 
 ### 4.2.2 Log Salary by Role
 
-```{r salary_by_role, fig.width=9, fig.height=6, fig.cap="Figure 4.2. Log Salary by Developer Role"}
+```{r salary_by_role, fig.width=9, fig.height=6, fig.cap="Figure 4.2. Log Salary by Developer Role", echo=FALSE}
 ggplot(data_clean, aes(x = reorder(role, log_salary, median), y = log_salary)) +
   geom_boxplot(fill = "steelblue", alpha = 0.7) +
   coord_flip() +
@@ -374,7 +439,7 @@ The lowest salary distributions belong to Game Developer, Embedded Developer, QA
 
 ### 4.2.3 Log Salary by Employment Status
 
-```{r salary_by_employment, fig.cap="Figure 4.3. Log Salary by Employment Status"}
+```{r salary_by_employment, fig.cap="Figure 4.3. Log Salary by Employment Status", echo=FALSE}
 ggplot(data_clean, aes(x = employment_status, y = log_salary, fill = employment_status)) +
   geom_boxplot(alpha = 0.7) +
   labs(title = "Log Salary by Employment Status",
@@ -387,7 +452,7 @@ Figure 4.3 displays the distribution of log-transformed salary across the five e
 
 ### 4.2.4 Log Salary vs. Years of Experience
 
-```{r salary_vs_experience, fig.cap="Figure 4.4. Log Salary vs. Years of Experience"}
+```{r salary_vs_experience, fig.cap="Figure 4.4. Log Salary vs. Years of Experience", echo=FALSE}
 ggplot(data_clean, aes(x = years_of_experience, y = log_salary)) +
   geom_point(alpha = 0.2, color = "steelblue") +
   geom_smooth(method = "lm", color = "red") +
