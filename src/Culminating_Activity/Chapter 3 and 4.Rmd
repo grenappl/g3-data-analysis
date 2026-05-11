@@ -536,6 +536,8 @@ plot(final_model)
 par(mfrow = c(1, 1))
 ```
 
+The Residuals vs Fitted plot shows residuals randomly scattered around zero with no major systematic pattern, suggesting that the linearity assumption is reasonably satisfied. The Normal Q-Q plot indicates that most residuals closely follow the reference line, with only slight deviations at the tails, implying approximate normality. The Scale-Location plot shows a relatively constant spread of residuals across fitted values, supporting homoscedasticity, while the Residuals vs Leverage plot suggests that no single observation exerts excessive influence on the model. Overall, the diagnostic plots indicate that the regression model provides an adequate and stable fit to the data.
+
 ### 4.4.2 Normality of Residuals
 
 ```{r normality, fig.width=9, fig.height=4, fig.cap="Figure 4.6. Q-Q Plot and Residual Histogram"}
@@ -555,6 +557,8 @@ curve(dnorm(x,
 par(mfrow = c(1, 1))
 ```
 
+The Q-Q plot demonstrates that most residuals align closely with the theoretical normal reference line, particularly in the center of the distribution. Slight deviations at the upper and lower tails indicate the presence of mild tail non-normality, which is common in large observational datasets and does not substantially threaten OLS estimation. The histogram of residuals further supports approximate normality, displaying a roughly bell-shaped and symmetric distribution centered near zero. The overlaid normal density curve closely matches the empirical residual distribution, suggesting that the residuals conform reasonably well to a normal distribution after the log transformation of salary.
+
 ```{r shapiro_ks}
 set.seed(33)
 resid_sample  <- sample(residuals(final_model), min(5000, length(residuals(final_model))))
@@ -572,6 +576,8 @@ cat("KS Test: D =", round(ks_result$statistic, 4),
     " | p-value =", ks_result$p.value, "\n")
 cat("Normality assumption:", ifelse(ks_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
 ```
+
+The formal normality tests produced mixed results. The Shapiro-Wilk test reported a statistically significant p-value, indicating a technical violation of strict normality. However, with a very large sample size of more than 11,000 observations, the Shapiro-Wilk test becomes extremely sensitive and tends to detect even trivial deviations from normality. In contrast, the Kolmogorov-Smirnov (KS) test did not indicate a meaningful departure from normality. Combined with the visual evidence from the Q-Q plot and histogram, the residual distribution can therefore be considered sufficiently normal for regression purposes.
 
 ### 4.4.3 Homoscedasticity
 
@@ -594,6 +600,8 @@ lines(lowess(fitted(final_model), sqrt(abs(residuals(final_model)))),
 par(mfrow = c(1, 1))
 ```
 
+In the Residuals vs Fitted plot, the residuals are dispersed relatively evenly around the horizontal zero line without a pronounced funnel or cone-shaped pattern. This indicates that the variance of errors remains generally constant across different fitted salary values. The Scale-Location plot reinforces this conclusion. The spread of the square-root standardized residuals remains relatively stable throughout the fitted value range, and the LOWESS smoothing line is approximately flat. Although minor fluctuations are present, there is no strong upward or downward trend suggesting severe heteroscedasticity.
+
 ```{r bptest}
 bp_result <- bptest(final_model)
 print(bp_result)
@@ -601,6 +609,8 @@ cat("Breusch-Pagan: BP =", round(bp_result$statistic, 4),
     " | p-value =", bp_result$p.value, "\n")
 cat("Homoscedasticity assumption:", ifelse(bp_result$p.value > 0.05, "PASSED", "VIOLATED"), "\n\n")
 ```
+
+The formal Breusch-Pagan test further supports the visual findings. Because the p-value exceeded the 0.05 significance threshold, the null hypothesis of constant variance could not be rejected. Therefore, the homoscedasticity assumption is considered satisfied, indicating that the model’s estimated standard errors and significance tests are reliable.
 
 ### 4.4.4 Independence of Errors
 
@@ -613,6 +623,8 @@ cat("Independence assumption:",
     ifelse(dw_result$statistic > 1.5 & dw_result$statistic < 2.5,
            "PASSED", "CHECK --- DW outside 1.5--2.5 range"), "\n\n")
 ```
+
+The independence of residuals was assessed using the Durbin-Watson test. The resulting Durbin-Watson statistic fell within the commonly accepted range of 1.5 to 2.5, indicating no evidence of substantial autocorrelation among residuals. A value close to 2 suggests that adjacent residuals are effectively independent from one another, which is consistent with the assumptions of OLS regression. Since the dataset consists of cross-sectional survey responses rather than time-series observations, strong autocorrelation was not expected. The test results therefore confirm that the independence assumption is adequately satisfied.
 
 ### 4.4.5 Multicollinearity (VIF)
 
@@ -629,6 +641,8 @@ print(vif_vals[vif_vals > 10])
 cat("Multicollinearity assumption:",
     ifelse(all(vif_vals < 10), "PASSED (no VIF > 10)", "VIOLATED"), "\n\n")
 ```
+
+Variance Inflation Factors (VIFs) were computed to assess multicollinearity among the predictors in the final regression model. Most variables exhibited low to moderate VIF values, indicating minimal correlation among independent variables and stable coefficient estimates. Higher VIF values were observed mainly for categorical variables with many factor levels, particularly country and role, due to the large number of dummy variables created during encoding rather than true problematic collinearity. No evidence suggested severe inflation of standard errors or unstable regression estimates, and all predictors remained interpretable within the model context. Overall, the multicollinearity assumption was considered adequately satisfied for the purposes of the analysis.
 
 ### 4.4.6 Influential Observations
 
@@ -652,6 +666,8 @@ cat("Top 10 most influential observations:\n")
 print(round(sort(cooksd, decreasing = TRUE)[1:10], 6))
 ```
 
+Using the standard threshold of 4/n, 609 observations were identified as potentially influential. However, this represents only a small proportion of the total sample, and the corresponding Cook’s Distance values remain extremely small overall. The top influential observations do not exhibit unusually large Cook’s Distance magnitudes, indicating that no single respondent exerts excessive influence on the fitted regression coefficients. This suggests that the model is robust and not overly dependent on a small subset of cases.
+
 ```{r leverage}
 hat_vals      <- hatvalues(final_model)
 p             <- length(coef(final_model))
@@ -662,6 +678,8 @@ high_leverage <- which(hat_vals > lev_threshold)
 cat("\nHigh leverage points (hat > 2p/n =", round(lev_threshold, 4), "):",
     length(high_leverage), "\n")
 ```
+
+Leverage statistics were also examined using the threshold 2p/n. While some observations demonstrated higher leverage due to unusual combinations of predictor values, these cases did not simultaneously exhibit large residuals capable of distorting the model substantially. Consequently, the influential and high-leverage observations are considered acceptable within the context of a large and diverse survey dataset.
 
 ### 4.4.7 Diagnostic Summary
 
