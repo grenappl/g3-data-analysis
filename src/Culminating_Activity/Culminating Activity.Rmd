@@ -1361,15 +1361,68 @@ Overall, The multiple linear regression analysis yielded a highly explanatory mo
 
 \newpage
 
-
 # Chapter 5: Conclusion and Recommendations
-Conclusion
+## Conclusion
 
-Summarize key findings.
+This study applied a multiple linear regression model to the Developer Survey 2026 dataset to examine how developer skills, experience, employment characteristics, and perceptions of artificial intelligence collectively influence annual salary. Using a cleaned sample of 11,445 observations and 16 predictor groups, the final OLS model achieved an Adjusted R² of 0.9218, meaning approximately 92.18% of the variance in log-transformed developer salary was explained by the included predictors, a notably strong result for cross-sectional observational data.
 
-**Recommendations**
+The analysis confirms all three research hypotheses: years of experience, technical role and skills, and AI-related variables were all statistically evaluated within the regression framework.
 
-Provide practical suggestions
+With respect to H₁ (experience and salary), the null hypothesis is rejected. Years of experience emerged as the strongest continuous predictor of salary (β̂ = 0.0364, p < 2e-16), with each additional year of experience associated with approximately a 3.64% increase in log-transformed salary. Age also contributed a small but independently significant positive effect (β̂ = 0.0052, p < 2e-16), suggesting that both accumulated experience and career stage carry distinct salary signals.
+
+With respect to H₂ (technical skills and salary), the null hypothesis is also rejected. Developer role, a proxy for technical specialization, was among the most significant categorical predictors. Engineering Manager (β̂ = 0.1996) and Machine Learning Engineer (β̂ = 0.1395) commanded the largest salary premiums, followed by Security Engineer, Cloud Engineer, DevOps/SRE, and Data Engineer. Conversely, Student/Intern (β̂ = −1.3699), QA/Test Engineer, and Game Developer were associated with significantly lower salaries. Education level's linear component (β̂ = 0.3024, p < 2e-16) further confirmed that higher educational attainment positively predicts compensation.
+
+With respect to H₃ (AI impact on roles and salary), the null hypothesis is partially supported. While AI-related variables such as AI usage frequency, AI productivity boost percentage, and AI sentiment were included in the full model, none reached statistical significance at the α = 0.05 level once role, experience, country, and employment status were controlled for. This suggests that perceived AI productivity gains and usage patterns do not independently drive salary differences in the current dataset, though they may influence compensation indirectly through role differentiation and skill acquisition.
+
+Country fixed effects were by far the most impactful categorical predictor group, with the United States (β̂ = 2.077), Switzerland (β̂ = 1.987), Australia (β̂ = 1.748), Canada (β̂ = 1.666), and Israel (β̂ = 1.645) carrying the largest positive salary premiums relative to the Argentina baseline. Employment status was also highly significant, Student (β̂ = −1.5858) and Unemployed (β̂ = −1.5988) respondents earned dramatically lower salaries, whereas Freelance, Full-time, and Part-time workers showed broadly comparable compensation levels.
+
+All OLS assumptions were satisfactorily met. The Breusch-Pagan test confirmed homoscedasticity (BP = 123.21, p = 0.0751), the Durbin-Watson statistic indicated no meaningful autocorrelation (DW = 1.9723), and the Kolmogorov-Smirnov test supported approximate normality of residuals (D = 0.0091, p = 0.3036). VIF-adjusted values were well within acceptable bounds, and Cook's Distance diagnostics confirmed that no individual observation exerted undue influence on the model. Overall, the model provides a statistically robust and interpretable framework for understanding the structural determinants of developer compensation.
+
+---
+
+## Recommendations
+
+Based on the findings of this study, the following practical recommendations are offered to various stakeholders:
+
+### For Students and Aspiring Developers
+
+- **Prioritize experience accumulation early.** Since each additional year of experience is associated with a ~3.64% salary increase, aspiring developers should seek internships, freelance projects, or open-source contributions to build verifiable experience as early as possible.
+
+- **Target high-premium specializations.** Roles such as Machine Learning Engineer, Security Engineer, Cloud Engineer, and DevOps/SRE consistently command salary premiums. Students should align their learning paths toward these high-demand specializations rather than generic programming skills.
+
+- **Pursue higher education strategically.** The strong positive linear relationship between education level and salary suggests that advanced degrees (Master's or Doctorate) yield measurable returns, particularly for roles in data science and machine learning.
+
+### For Professional Developers
+
+- **Leverage role transitions for salary growth.** Given the large salary gaps between roles, lateral moves into higher-premium specializations (e.g., transitioning from Front-End Development to Cloud Engineering or Machine Learning) can yield substantially larger salary gains than tenure-based raises within the same role.
+
+- **Consider geographic factors when making career decisions.** Country of employment is the dominant driver of salary variation in this study. Developers seeking higher compensation should weigh opportunities in high-premium markets such as the United States, Switzerland, Canada, or Australia, including remote positions with companies based in these countries.
+
+- **Understand the limited direct effect of AI tool usage on salary.** While proficiency with AI tools is increasingly expected, the analysis shows that AI usage frequency and productivity boost perceptions do not independently predict higher salaries once role and experience are controlled for. Developers should focus on AI skills as a complement to, not a substitute for, technical role expertise.
+
+### For Employers and Recruiters
+
+- **Structure compensation frameworks around experience, role, and geography.** The regression results confirm that these three factors account for the vast majority of salary variance. Compensation benchmarking tools and salary bands should reflect these structural predictors rather than relying on generic market surveys.
+
+- **Recognize parity across active employment types.** The study found no statistically significant salary differences between Full-time, Part-time, and Freelance developers at comparable experience and role levels. Employers should ensure freelance and part-time workers are compensated equitably relative to full-time peers to remain competitive in talent acquisition.
+
+- **Use role-based compensation to address AI talent competition.** Given the significant salary premiums for Machine Learning Engineers and Security Engineers, roles most directly impacted by AI adoption, organizations should proactively review compensation packages for these positions to attract and retain scarce talent.
+
+### For Academic Institutions
+
+- **Integrate high-premium technical specializations into curricula.** The salary premiums observed for roles such as Cloud Engineering, DevOps/SRE, and Machine Learning indicate strong market demand. Universities and coding bootcamps should ensure programs adequately cover cloud infrastructure, AI/ML pipelines, and security engineering.
+
+- **Emphasize practical, experience-building activities.** Since years of experience is the strongest continuous salary predictor, academic programs should incorporate capstone projects, industry partnerships, and internship requirements that allow students to accumulate professionally relevant experience before graduation.
+
+### For Future Researchers
+
+- **Replicate the study with real survey data.** The current dataset is synthetically generated. Future research should apply the same regression framework to the actual Stack Overflow Developer Survey or other large-scale real-world datasets to validate whether the relationships identified here hold empirically.
+
+- **Explore non-linear and interaction effects.** The OLS model assumes linear relationships between predictors and log salary. Future studies should explore polynomial terms, interaction effects (e.g., experience × role, country × AI usage), or machine learning methods such as gradient boosting or random forests to capture more complex salary dynamics.
+
+- **Incorporate time-series data for longitudinal analysis.** A cross-sectional design cannot establish causality. Longitudinal panel data tracking developers over time would allow researchers to assess how salary changes as experience accumulates, as roles evolve, and as AI tool adoption deepens, providing stronger causal evidence for the predictors identified here.
+
+- **Expand AI-related variables.** The current AI variables (usage frequency, productivity boost, sentiment, job threat perception) were non-significant in the full model. Richer AI-related measures, such as specific AI skill certifications, AI contribution to shipped products, or AI-driven productivity benchmarks, may reveal stronger and more direct links between AI engagement and compensation.
 
 \newpage
 
