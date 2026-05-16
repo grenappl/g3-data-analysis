@@ -1,0 +1,104 @@
+---
+title: "CG3CG3"
+author: 
+- de Pedro, Joenell Conrad
+- Florentino, Ian Miguel
+- Nacu, Drixyl Reece
+- Ruelan, Ivan Paul
+- Seno, Matthew Anakin
+date: "CG3CG3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(car)
+library(tidyverse)
+library(cluster)
+library(ggplot2)
+```
+
+```{r}
+data <- read.csv("./src/Culminating_Activity/AI_Impact_Student_Life_2026.csv")
+head(data)
+```
+
+# Preprocessing data
+
+Apparently you don't have to convert categorical into numerical 
+values in R, it just automatically labels them with the as.factor function
+
+```{r}
+# Non Ordinal
+data$Major = as.factor(data$Major)
+data$Primary_AI_Tool = as.factor(data$Primary_AI_Tool)
+data$Main_Usage_Case = as.factor(data$Main_Usage_Case)
+data$Main_Usage_Case = as.factor(data$Main_Usage_Case)
+ 
+# Ordinal Ranking
+data$AI_Ethics_Concern <- factor(
+  data$AI_Ethics_Concern,
+  levels = c("Low", "Medium", "High"),
+  ordered = TRUE
+)
+head(data)
+```
+
+```{r}
+df_cluster <- data %>%
+  select(Age, Task_Frequency_Daily, Time_Saved_Hours_Weekly,
+         GPA_Baseline, GPA_Post_AI, Career_Confidence_Score)
+df_scaled <- scale(df_cluster)
+
+wss <- map_dbl(1:10, ~kmeans(df_scaled, centers = .x, nstart = 25)$tot.withinss)
+plot(1:10, wss, type = "b", xlab = "Number of Clusters", ylab = "WSS")
+
+# Fit model
+set.seed(42)
+kmeans_model <- kmeans(df_scaled, centers = 3, nstart = 25)
+data$Cluster <- as.factor(kmeans_model$cluster)
+
+```
+
+```{r}
+pca <- prcomp(df_scaled, center = TRUE, scale. = TRUE)
+summary(pca)  # how much variance each component explains
+
+# Visualize
+pca_df <- as.data.frame(pca$x)
+pca_df$Major <- data$Major
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Major)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "PCA of Student AI Usage")
+```
+
+```{r}
+data$GPA_Change <- data$GPA_Post_AI - data$GPA_Baseline
+model <- lm(GPA_Post_AI ~ GPA_Baseline + Task_Frequency_Daily + 
+                         Time_Saved_Hours_Weekly +
+                         Major + Main_Usage_Case, data = data)
+
+```
+
+```{r}
+scatterplotMatrix(data)
+```
+
+```{r}
+coef(model)
+summary(model)
+```
+
+```{r}
+qqnorm (residuals(model), ylab="Residuals")
+length(residuals(model))
+shapiro.test(residuals(model))
+resid_std <- scale(residuals(model)) # mean=0, sd=1
+ks.test(resid_std, "pnorm")
+
+```

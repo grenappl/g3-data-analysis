@@ -1,0 +1,12 @@
+name: CG3CG3-EDA-Dashboard
+title: CG3CG3-EDA-Dashboard
+username: eieien
+account: eieien
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16778864
+bundleId: 11638266
+url: https://eieien.shinyapps.io/CG3CG3-EDA-Dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
