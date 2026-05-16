@@ -1,9 +1,9 @@
-This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.5.12)  16 MAY 2026 14:20
+This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.5.12)  16 MAY 2026 14:51
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**Culminating-Activity.tex
-(./Culminating-Activity.tex
+**CulminatingActivity.tex
+(./CulminatingActivity.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-03-20>
 (c:/Users/user/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/base/article.cls
@@ -728,7 +728,7 @@ Package: bookmark 2023-12-10 v1.31 PDF bookmarks (HO)
 (c:/Users/user/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/bookmark/bkm-dvipdfm.def
 File: bkm-dvipdfm.def 2023-12-10 v1.31 bookmark driver for dvipdfm (HO)
 \BKM@id=\count397
-)) (./Culminating-Activity.aux
+)) (./CulminatingActivity.aux
 
 LaTeX Warning: Label `tab:load_data' multiply defined.
 
@@ -742,7 +742,7 @@ LaTeX Warning: Label `tab:load_data' multiply defined.
 LaTeX Warning: Label `tab:load_data' multiply defined.
 
 )
-\openout1 = `Culminating-Activity.aux'.
+\openout1 = `CulminatingActivity.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 141.
 LaTeX Font Info:    ... okay on input line 141.
@@ -1143,20 +1143,20 @@ Overfull \hbox (14.87828pt too wide) in paragraph at lines 993--993
 
 
 ignored: Infinite glue shrinkage found in box being split [15]
-File: Culminating-Activity_files/figure-latex/salary_distribution-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/salary_distribution-1.pdf>
-File: Culminating-Activity_files/figure-latex/salary_by_role-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/salary_by_role-1.pdf>
+File: CulminatingActivity_files/figure-latex/salary_distribution-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/salary_distribution-1.pdf>
+File: CulminatingActivity_files/figure-latex/salary_by_role-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/salary_by_role-1.pdf>
 [16] [17] [18]
 Underfull \hbox (badness 1642) in paragraph at lines 1037--1043
 []\TU/lmr/m/n/12 Mid-tier roles such as Data Engineer, Data Scientist, Cloud Engineer, and Free-
  []
 
-File: Culminating-Activity_files/figure-latex/salary_by_employment-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/salary_by_employment-1.pdf>
+File: CulminatingActivity_files/figure-latex/salary_by_employment-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/salary_by_employment-1.pdf>
 [19]
-File: Culminating-Activity_files/figure-latex/salary_vs_experience-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/salary_vs_experience-1.pdf>
+File: CulminatingActivity_files/figure-latex/salary_vs_experience-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/salary_vs_experience-1.pdf>
 [20]
 
 LaTeX Warning: Float too large for page by 75.70554pt on input line 1169.
@@ -1186,21 +1186,18 @@ LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
 (Font)              scaled to size 9.00082pt on input line 1466.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
 (Font)              scaled to size 8.99904pt on input line 1466.
-
-LaTeX Warning: Float too large for page by 782.16096pt on input line 1573.
-
-File: Culminating-Activity_files/figure-latex/residual_plots-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/residual_plots-1.pdf>
-[28] [29]
-File: Culminating-Activity_files/figure-latex/normality_plot-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/normality_plot-1.pdf>
-[30]
-File: Culminating-Activity_files/figure-latex/homoscedasticity_plot-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/homoscedasticity_plot-1.pdf>
-[31] [32]
-File: Culminating-Activity_files/figure-latex/cooks_distance-1.pdf Graphic file (type pdf)
-<use Culminating-Activity_files/figure-latex/cooks_distance-1.pdf>
-[33] [34] [35] [36]
+File: CulminatingActivity_files/figure-latex/residual_plots-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/residual_plots-1.pdf>
+[28]
+File: CulminatingActivity_files/figure-latex/normality_plot-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/normality_plot-1.pdf>
+[29]
+File: CulminatingActivity_files/figure-latex/homoscedasticity_plot-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/homoscedasticity_plot-1.pdf>
+[30] [31]
+File: CulminatingActivity_files/figure-latex/cooks_distance-1.pdf Graphic file (type pdf)
+<use CulminatingActivity_files/figure-latex/cooks_distance-1.pdf>
+[32] [33] [34] [35]
 Missing character: There is no ₁ (U+2081) in font [lmroman12-regular]:mapping=tex-text;!
 Missing character: There is no β (U+03B2) in font [lmroman12-regular]:mapping=tex-text;!
 Missing character: There is no β (U+03B2) in font [lmroman12-regular]:mapping=tex-text;!
@@ -1218,31 +1215,31 @@ Missing character: There is no β (U+03B2) in font [lmroman12-regular]:mapping=t
 Missing character: There is no β (U+03B2) in font [lmroman12-regular]:mapping=tex-text;!
 Missing character: There is no β (U+03B2) in font [lmroman12-regular]:mapping=tex-text;!
 Missing character: There is no β (U+03B2) in font [lmroman12-regular]:mapping=tex-text;!
-[37] [38] [39]
-Underfull \hbox (badness 10000) in paragraph at lines 2140--2143
+[36] [37] [38]
+Underfull \hbox (badness 10000) in paragraph at lines 2048--2051
 []$[][][][][] [] [] [] [][][] [] [][][][][][] [] [][][] [] [][][][][] [] [][][][][][][][][][] [] [][][][] [] [][] [] [][] [] [][] [][] [][] [][] [][][][][][][] [][] [][] [][] [][][][][][][][][] [][] [][] [][] [][][] [][]
  []
 
-[40] [41]
+[39] [40]
 LaTeX Font Info:    Font shape `TU/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 2231.
-[42]
-Underfull \vbox (badness 10000) detected at line 2330
+(Font)              Font shape `TU/lmtt/b/n' tried instead on input line 2139.
+[41]
+Underfull \vbox (badness 10000) detected at line 2233
  []
 
 
-Underfull \vbox (badness 10000) detected at line 2330
+Underfull \vbox (badness 10000) detected at line 2233
  []
 
-[43] [44]
-Underfull \vbox (badness 10000) detected at line 2445
+[42] [43]
+Underfull \vbox (badness 10000) detected at line 2348
  []
 
 
-Underfull \vbox (badness 10000) detected at line 2445
+Underfull \vbox (badness 10000) detected at line 2348
  []
 
-[45] [46] [47] [48] [49] [50] [51] [52] [53] [54] [55] [56] (./Culminating-Activity.aux)
+[44] [45] [46] [47] [48] [49] [50] [51] [52] [53] [54] (./CulminatingActivity.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-03-20>
@@ -1252,12 +1249,12 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 25524 strings out of 470015
- 540036 string characters out of 5473888
- 1120601 words of memory out of 5000000
- 54012 multiletter control sequences out of 15000+600000
+ 24598 strings out of 470015
+ 518837 string characters out of 5473888
+ 1086698 words of memory out of 5000000
+ 53086 multiletter control sequences out of 15000+600000
  637216 words of font info for 119 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 90i,11n,114p,455b,3235s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,11n,114p,454b,2275s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on Culminating-Activity.pdf (56 pages).
+Output written on CulminatingActivity.pdf (54 pages).

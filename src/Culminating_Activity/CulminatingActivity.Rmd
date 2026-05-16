@@ -9,9 +9,7 @@ author:
 date: "May 16, 2026"
 output:
   pdf_document:
-    toc: true
-    toc_depth: 3
-    number_sections: true
+    toc: false
     latex_engine: xelatex
     keep_tex: false
 geometry: margin=1in
@@ -101,7 +99,7 @@ To comprehensively investigate the relationships among developer skills, experie
 | Hypothesis | Statement |
 |-----------|-----------|
 | $H0_1$ | The multilinear regression model shows that developers' experience does **not** significantly predict salary. |
-| $H0_1$ | The multilinear regression model shows that developers' experience **significantly** predicts salary. |
+| $H1_1$ | The multilinear regression model shows that developers' experience **significantly** predicts salary. |
 | $H0_2$ | The multilinear regression model shows that developers' technical skills do **not** significantly predict salary. |
 | $H1_2$ | The multilinear regression model shows that developers' technical skills **significantly** predict salary. |
 | $H0_3$ | The multilinear regression model shows that artificial intelligence has **no significant effect** on developers' roles and salary. |
@@ -201,7 +199,7 @@ make_pdf_table <- function(df, title) {
       font_size = 8,
       full_width = FALSE
     ) %>%
-    row_spec(0, bold = TRUE, color = "white", background = "black")
+    row_spec(0, bold = TRUE)
 }
 
 # 1. Demographics
@@ -711,7 +709,7 @@ modelsummary(
     ~term,                  ~`Backward (p-val)`,
     "Country FE",           "Yes",
     "Education (poly)",     "Yes",
-    "Company Size (poly)",  "Yes",
+    "Company Size (poly)",  "Yes",  
     "AI Frequency (poly)",  "Yes",
     "Burnout (poly)",       "No",
     "Gender",               "No",
@@ -988,7 +986,7 @@ comparison %>%
     font_size     = 9,
     full_width    = FALSE
   ) %>%
-  row_spec(0, bold = TRUE, color = "white", background = "black") %>%
+  row_spec(0, bold = TRUE) %>%
   row_spec(1, bold = TRUE)
 ```
 
@@ -1000,62 +998,6 @@ Based on the comparison table, all competitive models share an identical Adjuste
 final_model <- model_full
 final_model_summary <- summary(final_model)
 final_anova <- anova(final_model)
-```
-
-```{r final_model_table, results='asis', echo=FALSE}
-modelsummary(
-  list("Final Model (Full)" = final_model),
-  coef_map = c(
-    "years_of_experience"              = "Years of Experience",
-    "age"                              = "Age",
-    "coding_hours_per_week"            = "Coding Hours/Week",
-    "work_modeIn-Office"               = "Work Mode: In-Office",
-    "work_modeRemote"                  = "Work Mode: Remote",
-    "genderNon-binary"                 = "Gender: Non-binary",
-    "genderPrefer not to say"          = "Gender: Prefer Not to Say",
-    "genderWoman"                      = "Gender: Woman",
-    "primary_osmacOS"                  = "OS: macOS",
-    "primary_osWindows"                = "OS: Windows",
-    "ai_productivity_boost_pct"        = "AI Productivity Boost (\\%)",
-    "remote_work_preference_1to5"      = "Remote Work Preference",
-    "open_source_contributor"          = "Open Source Contributor",
-    "employment_statusFull-time"       = "Employment: Full-time",
-    "employment_statusPart-time"       = "Employment: Part-time",
-    "employment_statusStudent"         = "Employment: Student",
-    "employment_statusUnemployed"      = "Employment: Unemployed",
-    "roleCloud Engineer"               = "Role: Cloud Engineer",
-    "roleData Engineer"                = "Role: Data Engineer",
-    "roleData Scientist"               = "Role: Data Scientist",
-    "roleDevOps / SRE"                 = "Role: DevOps / SRE",
-    "roleEmbedded Developer"           = "Role: Embedded Developer",
-    "roleEngineering Manager"          = "Role: Engineering Manager",
-    "roleFreelancer / Consultant"      = "Role: Freelancer / Consultant",
-    "roleFront-End Developer"          = "Role: Front-End Developer",
-    "roleFull-Stack Developer"         = "Role: Full-Stack Developer",
-    "roleGame Developer"               = "Role: Game Developer",
-    "roleMachine Learning Engineer"    = "Role: Machine Learning Engineer",
-    "roleMobile Developer"             = "Role: Mobile Developer",
-    "roleQA / Test Engineer"           = "Role: QA / Test Engineer",
-    "roleSecurity Engineer"            = "Role: Security Engineer",
-    "roleStudent / Intern"             = "Role: Student / Intern"
-  ),
-  coef_omit = "country|education_level|company_size|ai_usage_frequency|burnout_frequency",
-  gof_map   = gof_shared,
-  stars     = c("*" = 0.05, "**" = 0.01, "***" = 0.001),
-  add_rows  = tibble::tribble(
-    ~term,                  ~`Final Model (Full)`,
-    "Country FE",           "Yes (49 levels)",
-    "Education (poly)",     "Yes",
-    "Company Size (poly)",  "Yes",
-    "AI Frequency (poly)",  "Yes",
-    "Burnout (poly)",       "Yes"
-  ),
-  output   = "latex",
-  booktabs = TRUE,
-  title    = "Final Model: Log Salary Regression (Full Specification)",
-  notes    = "Baseline: Freelance, Back-End Developer, Hybrid, Man, Linux, Argentina. Country FE omitted for brevity.",
-  escape   = FALSE
-)
 ```
 
 The final model is the full OLS specification with all 16 predictor groups, explaining **92.25%** of the variance in log-transformed salary (Adj. R² = 0.9218, F(102, 11342) = 1324, p < 2.2e-16). Years of experience ($\hat{\beta}$ = 0.036, p < 2e-16) and age ($\hat{\beta}$ = 0.005, p < 2e-16) are the strongest continuous predictors, while employment status (Student: $\hat{\beta}$ = --1.586; Unemployed: $\hat{\beta}$ = --1.599) and role (Student/Intern: $\hat{\beta}$ = --1.370; Engineering Manager: $\hat{\beta}$ = 0.200) account for the largest categorical effects. Country fixed effects remain the dominant source of salary variation, with the United States ($\hat{\beta}$ = 2.077) and Switzerland ($\hat{\beta}$ = 1.987) carrying the highest premiums relative to the Argentina baseline.
@@ -1374,11 +1316,12 @@ With respect to H₂ (technical skills and salary), the null hypothesis is also 
 
 With respect to H₃ (AI impact on roles and salary), the null hypothesis is partially supported. While AI-related variables such as AI usage frequency, AI productivity boost percentage, and AI sentiment were included in the full model, none reached statistical significance at the α = 0.05 level once role, experience, country, and employment status were controlled for. This suggests that perceived AI productivity gains and usage patterns do not independently drive salary differences in the current dataset, though they may influence compensation indirectly through role differentiation and skill acquisition.
 
+It should be acknowledged, however, that the specific objectives in Chapter 1 identified programming languages, frameworks, and tools as additional proxies for technical skill. These variables were present in the dataset but were excluded from the regression model because they were stored as semicolon-delimited multi-value text fields that could not be directly encoded as predictors without further transformation. Future studies should address this gap by applying binary encoding or count-based feature extraction to these variables, which would allow a more direct test of whether specific technology stacks independently predict developer compensation beyond the role-level effects captured here.
+
 Country fixed effects were by far the most impactful categorical predictor group, with the United States (β̂ = 2.077), Switzerland (β̂ = 1.987), Australia (β̂ = 1.748), Canada (β̂ = 1.666), and Israel (β̂ = 1.645) carrying the largest positive salary premiums relative to the Argentina baseline. Employment status was also highly significant, Student (β̂ = −1.5858) and Unemployed (β̂ = −1.5988) respondents earned dramatically lower salaries, whereas Freelance, Full-time, and Part-time workers showed broadly comparable compensation levels.
 
-All OLS assumptions were satisfactorily met. The Breusch-Pagan test confirmed homoscedasticity (BP = 123.21, p = 0.0751), the Durbin-Watson statistic indicated no meaningful autocorrelation (DW = 1.9723), and the Kolmogorov-Smirnov test supported approximate normality of residuals (D = 0.0091, p = 0.3036). VIF-adjusted values were well within acceptable bounds, and Cook's Distance diagnostics confirmed that no individual observation exerted undue influence on the model. Overall, the model provides a statistically robust and interpretable framework for understanding the structural determinants of developer compensation.
+All OLS assumptions were satisfactorily met. The Breusch-Pagan test confirmed homoscedasticity (BP = 123.21, p = 0.0751), the Durbin-Watson statistic indicated no meaningful autocorrelation (DW = 1.9723), and the Kolmogorov-Smirnov test supported approximate normality of residuals (D = 0.0091, p = 0.3036). VIF-adjusted values were well within acceptable bounds, and Cook's Distance diagnostics confirmed that no individual observation exerted undue influence on the model. It is worth noting that while the Shapiro-Wilk test technically flagged a normality violation (W = 0.9991, p = 0.013), this is attributable to the test's well-documented hypersensitivity at sample sizes exceeding 10,000 observations rather than a substantive departure from normality, as confirmed by the Q-Q plot and residual histogram. Taken together, the diagnostic results support the validity and reliability of the final model's estimates and inferences.
 
----
 
 ## Recommendations
 
@@ -1424,7 +1367,7 @@ Based on the findings of this study, the following practical recommendations are
 
 - **Expand AI-related variables.** The current AI variables (usage frequency, productivity boost, sentiment, job threat perception) were non-significant in the full model. Richer AI-related measures, such as specific AI skill certifications, AI contribution to shipped products, or AI-driven productivity benchmarks, may reveal stronger and more direct links between AI engagement and compensation.
 
-\newpage
+
 
 
 # References
@@ -1475,5 +1418,622 @@ U.S. Bureau of Labor Statistics. (2025). *Occupational outlook handbook: Softwar
 
 Xu, M. (2025). Salary prediction using machine learning. *Scholarly Review Journal*, *Summer 2025*(13). https://doi.org/10.70121/001c.139043
 
+
 # Appendices
-Appendix A: Code
+
+## Appendix A: Library Setup and Global Options
+
+```{r app_setup, eval=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+options(kableExtra.latex.load_packages = FALSE)
+options(knitr.table.format = "latex")
+options(tinytex.verbose = TRUE)
+```
+
+```{r app_libraries, eval=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(cluster)
+library(car)
+library(broom)
+library(MASS)
+library(leaps)
+library(lmtest)
+library(kableExtra)
+library(modelsummary)
+library(stargazer)
+
+
+select <- dplyr::select
+```
+
+## Appendix B: Data Loading and Preview Tables
+
+```{r app_load_data, eval=FALSE}
+data <- read.csv("developer_survey.csv")
+make_pdf_table <- function(df, title) {
+  df %>%
+    head(15) %>%
+    kbl(
+      caption = title,
+      booktabs = TRUE,
+      longtable = FALSE,
+      linesep = "",
+      align = "c"
+    ) %>%
+    kable_styling(
+      latex_options = c(
+        "striped",
+        "repeat_header",
+        "hold_position",
+        "scale_down"
+      ),
+      font_size = 8,
+      full_width = FALSE
+    ) %>%
+    row_spec(0, bold = TRUE, color = "white", background = "black")
+}
+
+data %>%
+  select(
+    respondent_id, survey_year, country, age, gender,
+    education_level, years_of_experience, role
+  ) %>%
+  make_pdf_table("Table 1. Developer Demographics")
+
+data %>%
+  select(
+    employment_status, company_size, work_mode,
+    coding_hours_per_week, annual_salary_usd,
+    job_satisfaction, career_satisfaction
+  ) %>%
+  make_pdf_table("Table 2. Employment and Salary Information")
+
+data %>%
+  select(
+    primary_os, languages_used, frameworks_used,
+    databases_used, cloud_platforms_used, ide_editor
+  ) %>%
+  make_pdf_table("Table 3. Technology Stack")
+
+data %>%
+  select(
+    ai_tools_used, ai_usage_frequency,
+    ai_productivity_boost_pct, ai_sentiment,
+    ai_job_threat_perception
+  ) %>%
+  make_pdf_table("Table 4. AI Usage and Perception")
+
+data %>%
+  select(
+    primary_learning_source, open_source_contributor,
+    looking_for_job, remote_work_preference_1to5,
+    burnout_frequency, want_to_learn_next
+  ) %>%
+  make_pdf_table("Table 5. Career Growth and Preferences")
+```
+
+## Appendix C: Missing Value Audit
+
+```{r app_missing_summary, eval=FALSE}
+missing_summary <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  mutate(pct_missing = round(n_missing / nrow(data) * 100, 1)) %>%
+  filter(n_missing > 0) %>%
+  arrange(desc(pct_missing))
+
+print(missing_summary)
+```
+
+## Appendix D: Data Cleaning and Preprocessing
+
+```{r app_data_clean, eval=FALSE}
+data_clean <- data %>%
+
+  dplyr::select(-respondent_id, -languages_used, -frameworks_used,
+                -databases_used, -cloud_platforms_used, -ide_editor,
+                -want_to_learn_next, -ai_tools_used) %>%
+
+  mutate(
+    years_of_experience         = ifelse(is.na(years_of_experience),
+                                    median(years_of_experience, na.rm = TRUE),
+                                    years_of_experience),
+    age                         = ifelse(is.na(age),
+                                    median(age, na.rm = TRUE), age),
+    coding_hours_per_week       = ifelse(is.na(coding_hours_per_week),
+                                    median(coding_hours_per_week, na.rm = TRUE),
+                                    coding_hours_per_week),
+    ai_productivity_boost_pct   = ifelse(is.na(ai_productivity_boost_pct),
+                                    median(ai_productivity_boost_pct, na.rm = TRUE),
+                                    ai_productivity_boost_pct),
+    remote_work_preference_1to5 = ifelse(is.na(remote_work_preference_1to5),
+                                    median(remote_work_preference_1to5, na.rm = TRUE),
+                                    remote_work_preference_1to5)
+  ) %>%
+
+  mutate(
+    across(
+      c(gender, role, employment_status, work_mode, primary_os,
+        ai_sentiment, ai_job_threat_perception, primary_learning_source,
+        looking_for_job, country, open_source_contributor),
+      ~ {
+        mode_val <- names(sort(table(.), decreasing = TRUE))[1]
+        ifelse(is.na(.), mode_val, .)
+      }
+    )
+  ) %>%
+
+  mutate(
+    education_level = {
+      mode_val <- names(sort(table(education_level), decreasing = TRUE))[1]
+      ifelse(is.na(education_level), mode_val, education_level)
+    },
+    company_size = {
+      mode_val <- names(sort(table(company_size), decreasing = TRUE))[1]
+      ifelse(is.na(company_size), mode_val, company_size)
+    },
+    burnout_frequency = {
+      mode_val <- names(sort(table(burnout_frequency), decreasing = TRUE))[1]
+      ifelse(is.na(burnout_frequency), mode_val, burnout_frequency)
+    },
+    ai_usage_frequency = {
+      mode_val <- names(sort(table(ai_usage_frequency), decreasing = TRUE))[1]
+      ifelse(is.na(ai_usage_frequency), mode_val, ai_usage_frequency)
+    }
+  ) %>%
+
+  mutate(
+    education_level = factor(education_level,
+      levels = c("High school", "Some college", "Associate degree",
+                 "Self-taught / Bootcamp", "Bachelor's degree",
+                 "Master's degree", "Doctorate (PhD)"),
+      ordered = TRUE),
+
+    company_size = factor(company_size,
+      levels = c("1-10", "11-50", "51-200", "201-1000",
+                 "1001-5000", "5001-10000", "10000+"),
+      ordered = TRUE),
+
+    burnout_frequency = factor(burnout_frequency,
+      levels = c("Never", "Rarely", "Sometimes", "Often", "Always"),
+      ordered = TRUE),
+
+    ai_usage_frequency = factor(ai_usage_frequency,
+      levels = c("Never", "Rarely", "Monthly", "Weekly",
+                 "Daily", "Multiple times daily"),
+      ordered = TRUE),
+
+    gender                   = factor(gender),
+    role                     = factor(role),
+    employment_status        = factor(employment_status),
+    work_mode                = factor(work_mode),
+    primary_os               = factor(primary_os),
+    ai_sentiment             = factor(ai_sentiment),
+    ai_job_threat_perception = factor(ai_job_threat_perception),
+    primary_learning_source  = factor(primary_learning_source),
+    looking_for_job          = factor(looking_for_job),
+    country                  = factor(country)
+  ) %>%
+
+  filter(!is.na(annual_salary_usd), annual_salary_usd > 0) %>%
+  mutate(log_salary = log(annual_salary_usd))
+
+cat("Rows after cleaning:", nrow(data_clean), "\n")
+```
+
+## Appendix E: Post-Cleaning Validation Check
+
+```{r app_verify_clean, eval=FALSE}
+remaining_na <- data_clean %>%
+  summarise(across(everything(), ~ sum(is.na(.)))) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") %>%
+  filter(n_missing > 0)
+
+if (nrow(remaining_na) == 0) {
+  cat("No missing values remaining.\n")
+} else {
+  cat("WARNING: Missing values still present:\n")
+  print(remaining_na)
+}
+```
+
+## Appendix F: Descriptive Statistics Summary
+
+```{r app_descriptive_stats, eval=FALSE}
+summary(data_clean)
+```
+
+## Appendix G: Exploratory Visualizations
+
+```{r app_salary_distribution, eval=FALSE}
+# Raw vs. Log-Transformed Salary Distribution
+par(mfrow = c(1, 2))
+hist(data_clean$annual_salary_usd, main = "Raw Salary", col = "steelblue",
+     xlab = "Annual Salary (USD)")
+hist(data_clean$log_salary, main = "Log Salary", col = "tomato",
+     xlab = "Log(Annual Salary)")
+par(mfrow = c(1, 1))
+```
+
+```{r app_salary_by_role, eval=FALSE}
+# Log Salary by Developer Role
+ggplot(data_clean, aes(x = reorder(role, log_salary, median), y = log_salary)) +
+  geom_boxplot(fill = "steelblue", alpha = 0.7) +
+  coord_flip() +
+  labs(title = "Log Salary by Role", x = "Role", y = "Log Salary") +
+  theme_minimal()
+```
+
+```{r app_salary_by_employment, eval=FALSE}
+# Log Salary by Employment Status
+ggplot(data_clean, aes(x = employment_status, y = log_salary, fill = employment_status)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Log Salary by Employment Status",
+       x = "Employment Status", y = "Log Salary") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+```{r app_salary_vs_experience, eval=FALSE}
+# Log Salary vs. Years of Experience (Scatter with Linear Fit)
+ggplot(data_clean, aes(x = years_of_experience, y = log_salary)) +
+  geom_point(alpha = 0.2, color = "steelblue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Log Salary vs. Years of Experience",
+       x = "Years of Experience", y = "Log Salary") +
+  theme_minimal()
+```
+
+## Appendix H: Shared Coefficient Map and GOF Metrics
+
+```{r app_coef_gof_shared, eval=FALSE}
+
+coef_map_shared <- c(
+  "years_of_experience"         = "Years of Experience",
+  "age"                         = "Age",
+  "coding_hours_per_week"       = "Coding Hours/Week",
+  "work_modeIn-Office"          = "Work Mode: In-Office",
+  "work_modeRemote"             = "Work Mode: Remote",
+  "genderNon-binary"            = "Gender: Non-binary",
+  "genderPrefer not to say"     = "Gender: Prefer Not to Say",
+  "genderWoman"                 = "Gender: Woman",
+  "primary_osmacOS"             = "OS: macOS",
+  "primary_osWindows"           = "OS: Windows",
+  "ai_productivity_boost_pct"   = "AI Productivity Boost (%)",
+  "remote_work_preference_1to5" = "Remote Work Preference",
+  "open_source_contributor"     = "Open Source Contributor"
+)
+
+
+gof_shared <- tibble::tribble(
+  ~raw,            ~clean,    ~fmt,
+  "nobs",          "N",        0,
+  "r.squared",     "R²",       3,
+  "adj.r.squared", "Adj. R²",  3,
+  "AIC",           "AIC",      1,
+  "BIC",           "BIC",      1
+)
+```
+
+## Appendix I: Full OLS Regression Model
+
+```{r app_model_full, eval=FALSE}
+
+model_full <- lm(
+  log_salary ~ years_of_experience + age + coding_hours_per_week +
+    education_level + role + employment_status + company_size +
+    work_mode + gender + primary_os + ai_productivity_boost_pct +
+    ai_usage_frequency + burnout_frequency + remote_work_preference_1to5 +
+    country + open_source_contributor,
+  data = data_clean
+)
+
+summary(model_full)
+AIC(model_full)
+BIC(model_full)
+```
+
+## Appendix J: Variable Selection --- Backward Elimination by p-value
+
+```{r app_vs_backward, eval=FALSE}
+
+drop1(model_full, test = "F")
+
+model_backward_pval2 <- update(model_full, . ~ . - gender - primary_os - burnout_frequency)
+summary(model_backward_pval2)
+drop1(model_backward_pval2, test = "F")
+```
+
+## Appendix K: Variable Selection --- Stepwise AIC
+
+```{r app_vs_aic, eval=FALSE}
+
+model_step_aic <- stepAIC(model_full, direction = "both", trace = FALSE)
+summary(model_step_aic)
+AIC(model_step_aic)
+BIC(model_step_aic)
+```
+
+## Appendix L: Variable Selection --- Stepwise BIC
+
+```{r app_vs_bic, eval=FALSE}
+
+n <- nrow(data_clean)
+model_step_bic <- stepAIC(model_full, direction = "both", k = log(n), trace = FALSE)
+summary(model_step_bic)
+AIC(model_step_bic)
+BIC(model_step_bic)
+```
+
+## Appendix M: Variable Selection --- Theory-Driven Reduced Model
+
+```{r app_vs_theory, eval=FALSE}
+
+model_theory <- lm(
+  log_salary ~ years_of_experience + education_level + role +
+    employment_status + company_size + work_mode + country,
+  data = data_clean
+)
+
+summary(model_theory)
+AIC(model_theory)
+BIC(model_theory)
+```
+
+## Appendix N: Multicollinearity Check and VIF-Adjusted Model
+
+```{r app_vs_vif, eval=FALSE}
+
+vif(model_full)
+
+
+model_no_collinear <- lm(
+  log_salary ~ years_of_experience + coding_hours_per_week +
+    education_level + role + employment_status + company_size +
+    work_mode + gender + primary_os + ai_productivity_boost_pct +
+    ai_usage_frequency + burnout_frequency + remote_work_preference_1to5 +
+    country + open_source_contributor,
+  data = data_clean
+)
+
+vif(model_no_collinear)
+summary(model_no_collinear)
+```
+
+## Appendix O: Model Comparison Table
+
+```{r app_model_comparison, eval=FALSE}
+
+models <- list(
+  Full          = model_full,
+  Backward_Pval = model_backward_pval2,
+  Stepwise_AIC  = model_step_aic,
+  Stepwise_BIC  = model_step_bic,
+  Theory_Driven = model_theory,
+  No_Collinear  = model_no_collinear
+)
+
+comparison <- data.frame(
+  Model    = names(models),
+  R2       = sapply(models, function(m) round(summary(m)$r.squared, 4)),
+  Adj_R2   = sapply(models, function(m) round(summary(m)$adj.r.squared, 4)),
+  AIC      = sapply(models, function(m) round(AIC(m), 2)),
+  BIC      = sapply(models, function(m) round(BIC(m), 2)),
+  Num_Vars = sapply(models, function(m) length(coef(m)) - 1)
+)
+
+comparison <- comparison[order(comparison$Adj_R2, decreasing = TRUE), ]
+
+comparison %>%
+  kbl(
+    caption  = "Table 4.2. Model Comparison Summary",
+    booktabs = TRUE,
+    digits   = 4,
+    col.names = c("Model", "R²", "Adj. R²", "AIC", "BIC", "No. Predictors"),
+    align    = "lrrrrr",
+    row.names = FALSE
+  ) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down"),
+    font_size     = 9,
+    full_width    = FALSE
+  ) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "black") %>%
+  row_spec(1, bold = TRUE)
+```
+
+## Appendix P: Final Model Definition
+
+```{r app_final_model, eval=FALSE}
+
+final_model <- model_full
+final_model_summary <- summary(final_model)
+final_anova <- anova(final_model)
+```
+
+## Appendix Q: Residual Diagnostic Plots
+
+```{r app_residual_plots, eval=FALSE}
+
+par(mfrow = c(2, 2))
+plot(final_model)
+par(mfrow = c(1, 1))
+```
+
+## Appendix R: Normality of Residuals --- Q-Q Plot and Histogram
+
+```{r app_normality_plot, eval=FALSE}
+
+par(mfrow = c(1, 2))
+
+qqnorm(residuals(final_model), main = "Normal Q-Q Plot of Residuals")
+qqline(residuals(final_model), col = "red", lwd = 2)
+
+hist(residuals(final_model), breaks = 50, col = "steelblue",
+     main = "Histogram of Residuals", xlab = "Residuals")
+curve(dnorm(x,
+            mean = mean(residuals(final_model)),
+            sd   = sd(residuals(final_model))) * length(residuals(final_model)) *
+        diff(hist(residuals(final_model), breaks = 50, plot = FALSE)$breaks)[1],
+      add = TRUE, col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+
+## Appendix S: Normality Tests --- Shapiro-Wilk and Kolmogorov-Smirnov
+
+```{r app_normality_tests, eval=FALSE}
+
+set.seed(33)
+resid_sample   <- sample(residuals(final_model), min(5000, length(residuals(final_model))))
+shapiro_result <- shapiro.test(resid_sample)
+ks_result      <- ks.test(residuals(final_model), "pnorm",
+                           mean = mean(residuals(final_model)),
+                           sd   = sd(residuals(final_model)))
+```
+
+## Appendix T: Homoscedasticity --- Residuals vs. Fitted and Scale-Location Plots
+
+```{r app_homoscedasticity_plot, eval=FALSE}
+
+par(mfrow = c(1, 2))
+
+plot(fitted(final_model), residuals(final_model),
+     main = "Residuals vs Fitted", xlab = "Fitted Values", ylab = "Residuals",
+     pch = 20, col = rgb(0, 0, 1, 0.3))
+abline(h = 0, col = "red", lwd = 2)
+lines(lowess(fitted(final_model), residuals(final_model)), col = "orange", lwd = 2)
+
+plot(fitted(final_model), sqrt(abs(residuals(final_model))),
+     main = "Scale-Location", xlab = "Fitted Values",
+     ylab = expression(sqrt("|Residuals|")),
+     pch = 20, col = rgb(0, 0, 1, 0.3))
+lines(lowess(fitted(final_model), sqrt(abs(residuals(final_model)))),
+      col = "red", lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+
+## Appendix U: Homoscedasticity --- Breusch-Pagan Test
+
+```{r app_bptest, eval=FALSE}
+bp_result <- bptest(final_model)
+```
+
+## Appendix V: Independence of Errors --- Durbin-Watson Test
+
+```{r app_durbin_watson, eval=FALSE}
+dw_result <- dwtest(final_model)
+```
+
+## Appendix W: Multicollinearity --- VIF Table for Final Model
+
+```{r app_vif_final, eval=FALSE}
+vif_vals <- vif(final_model)
+
+vif_df <- as.data.frame(vif_vals)
+vif_df$Variable <- rownames(vif_df)
+
+vif_display <- data.frame(
+  Variable = rownames(vif_df),
+  GVIF     = round(vif_df[, 1], 4),
+  Df       = vif_df[, 2],
+  `Adj. GVIF` = round(vif_df[, 3], 4),
+  check.names = FALSE
+)
+
+vif_display %>%
+  kbl(
+    caption   = "Table 4.3. Variance Inflation Factors (Final Model)",
+    booktabs  = TRUE,
+    row.names = FALSE,
+    align     = "lrrr"
+  ) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position"),
+    font_size     = 9,
+    full_width    = FALSE
+  ) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "black") %>%
+  row_spec(which(vif_display$GVIF > 10), bold = TRUE, color = "red")
+```
+
+## Appendix X: Influential Observations --- Cook's Distance and Leverage
+
+```{r app_cooks_distance, eval=FALSE}
+cooksd    <- cooks.distance(final_model)
+threshold <- 4 / nrow(data_clean)
+
+influential <- which(cooksd > threshold)
+
+plot(cooksd, type = "h",
+     main = "Cook's Distance",
+     ylab = "Cook's Distance", xlab = "Observation Index",
+     col  = ifelse(cooksd > threshold, "red", "steelblue"))
+abline(h = threshold, col = "red", lty = 2)
+legend("topright", legend = paste0("Threshold = 4/n = ", round(threshold, 5)),
+       col = "red", lty = 2)
+```
+
+```{r app_leverage, eval=FALSE}
+hat_vals      <- hatvalues(final_model)
+p             <- length(coef(final_model))
+n             <- nrow(data_clean)
+lev_threshold <- 2 * p / n
+
+high_leverage <- which(hat_vals > lev_threshold)
+```
+
+## Appendix Y: Diagnostic Summary Table
+
+```{r app_diagnostic_summary, eval=FALSE}
+diag_table <- data.frame(
+  Test   = c(
+    "Shapiro-Wilk (Normality)",
+    "Kolmogorov-Smirnov (Normality)",
+    "Breusch-Pagan (Homoscedasticity)",
+    "Durbin-Watson (Independence)",
+    "VIF Max (Multicollinearity)",
+    "Cook's Distance (Influential Obs.)"
+  ),
+  Result = c(
+    paste0("W = ", round(shapiro_result$statistic, 4), ", p = ", round(shapiro_result$p.value, 4)),
+    paste0("D = ", round(ks_result$statistic, 4),      ", p = ", round(ks_result$p.value, 4)),
+    paste0("BP = ", round(bp_result$statistic, 4),     ", p = ", round(bp_result$p.value, 4)),
+    paste0("DW = ", round(dw_result$statistic, 4),     ", p = ", round(dw_result$p.value, 4)),
+    paste0("Max GVIF = ", round(max(vif_vals[,1]), 2), " (", round(max(vif_vals[,3]), 4), " adj.)"),
+    paste0(length(influential), " flagged (", round(length(influential)/n*100, 1), "% of n)")
+  ),
+  Status = c(
+    ifelse(shapiro_result$p.value > 0.05, "PASSED", "VIOLATED*"),
+    ifelse(ks_result$p.value      > 0.05, "PASSED", "VIOLATED"),
+    ifelse(bp_result$p.value      > 0.05, "PASSED", "VIOLATED"),
+    ifelse(dw_result$statistic > 1.5 & dw_result$statistic < 2.5, "PASSED", "CHECK"),
+    ifelse(max(vif_vals[,3])      < 5,    "PASSED", "VIOLATED*"),
+    ifelse(length(influential)/n  < 0.05, "REVIEW", "ACCEPTABLE")
+  ),
+  stringsAsFactors = FALSE
+)
+
+diag_table %>%
+  kbl(
+    caption   = "Table 4.4. Diagnostic Summary",
+    booktabs  = TRUE,
+    row.names = FALSE,
+    align     = "llc"
+  ) %>%
+  kable_styling(
+    latex_options = c("striped", "hold_position", "scale_down"),
+    font_size     = 9,
+    full_width    = FALSE
+  ) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "black") %>%
+  footnote(
+    general = "* Violations are technical rather than substantive; see interpretation below.",
+    general_title = "Note:",
+    footnote_as_chunk = TRUE
+  )
+```
+
